@@ -1,0 +1,27 @@
+[package]
+name = "utopia"
+version = "0.1.0"
+authors = ["SchrodingerZhu <i@zhuyi.fan>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = {version = "1.0", features = ["derive"]}
+structopt = "0.2"
+ammonia = "3.1.0"
+pulldown-cmark = {version = "0.7", features = ["default", "simd"]}
+tide = "0.10.0"
+katex = "0.2.1"
+anyhow = "1"
+pretty_env_logger = "0.4.0"
+log = "0.4"
+markup = "0.4.1"
+snmalloc-rs = { version = "0.2.15", features = ["native-cpu", "cache-friendly"] }
+async-std = { version = "1.6", features = ["attributes", "unstable", "std"] }
+async-trait = "*"
+botan = "*"
+simd-json = {  version = "0.3.9", features = ["128bit", "swar-number-parsing", "serde_impl"] }
+radix64 = "0.6.2"
+rand = "*"
+ahash = { version = "0.3", features = ["compile-time-rng", "std"] }
