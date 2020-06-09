@@ -1,10 +1,63 @@
-use std::time::{UNIX_EPOCH, Duration};
+use std::ops::Add;
+use std::time::{Duration, UNIX_EPOCH};
 
 use radix64::STD as base64;
 use tide::{Status, StatusCode};
+use xactor::{Context, Message};
 
 use crate::server::JsonRequest;
-use std::ops::Add;
+
+const TIME_OUT: u64 = 30;
+
+#[derive(Eq, Ord, PartialOrd, PartialEq, Debug)]
+struct Stamp {
+    time_stamp: u64,
+    nonce: String,
+}
+
+
+#[xactor::message(result = "()")]
+#[derive(Clone)]
+struct CleanUp;
+
+#[xactor::message(result = "bool")]
+struct PutStamp(Stamp);
+
+#[derive(Default)]
+pub struct StampKeeper {
+    stamps: std::collections::BTreeSet<Stamp>
+}
+
+#[async_trait::async_trait]
+impl xactor::Actor for StampKeeper {
+    async fn started(&mut self, ctx: &Context<Self>) {
+        ctx.send_interval(CleanUp, Duration::from_secs(TIME_OUT / 2));
+    }
+}
+
+#[async_trait::async_trait]
+impl xactor::Handler<CleanUp> for StampKeeper {
+    async fn handle(&mut self, ctx: &Context<Self>, msg: CleanUp) {
+        while !self.stamps.is_empty()
+            && UNIX_EPOCH.add(Duration::from_secs(self.stamps.first().unwrap().time_stamp))
+            .elapsed().unwrap().as_secs() > TIME_OUT {
+            self.stamps.pop_first();
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl xactor::Handler<PutStamp> for StampKeeper {
+    async fn handle(&mut self, ctx: &Context<Self>, msg: PutStamp) -> bool {
+        if self.stamps.contains(&msg.0) {
+            false
+        } else {
+            self.stamps.insert(msg.0);
+            true
+        }
+    }
+}
+
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Packet {
@@ -16,12 +69,26 @@ pub struct Packet {
 }
 
 impl Packet {
-    pub fn to_json_request<T: serde::de::DeserializeOwned>(&self, privkey: &botan::Privkey, pubkey: &botan::Pubkey) -> tide::Result<T> {
+    pub async fn to_json_request<T: serde::de::DeserializeOwned>(
+        &self,
+        privkey: &botan::Privkey,
+        pubkey: &botan::Pubkey,
+        mut stamp_keeper: Option<&mut xactor::Addr<StampKeeper>>,
+    ) -> tide::Result<T> {
         let time_stamp: u64 = self.time_stamp.parse()
             .status(StatusCode::RequestTimeout)?;
         if UNIX_EPOCH.add(Duration::from_secs(time_stamp)).elapsed().status(StatusCode::RequestTimeout)
-            .map(|x|x.as_secs() > 30)? {
-            return Err(tide::Error::from_str(StatusCode::RequestTimeout, "Time limit exceeded"))
+            .map(|x| x.as_secs() > TIME_OUT)? {
+            return Err(tide::Error::from_str(StatusCode::RequestTimeout, "Time Limit Exceeded"));
+        }
+        if stamp_keeper.is_some() {
+            let addr = stamp_keeper.as_mut().unwrap();
+            match addr.call(PutStamp(Stamp { time_stamp, nonce: self.nonce.clone() })).await {
+                Ok(false) | Err(_) => {
+                    return Err(tide::Error::from_str(StatusCode::RequestTimeout, "Stamp Validation Failed"));
+                }
+                _ => ()
+            }
         }
         let verifier = botan::Verifier::new(pubkey, "PKCS1v15(SHA-256)")
             .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Failed to Initialized Verifier"))?;
@@ -38,6 +105,9 @@ impl Packet {
         let aead_key = decrypter.decrypt(symmetric_key.as_slice())
             .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Invalid AEAD Key"))?;
         verifier.update(self.time_stamp.as_bytes())
+            .and_then(|_| verifier.update(aead_key.as_ref()))
+            .and_then(|_| verifier.update(message.as_ref()))
+            .and_then(|_| verifier.update(nonce.as_ref()))
             .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Unable to Update Verifier"))?;
         if let Ok(true) = verifier.finish(signature.as_slice()) {
             let aead = botan::Cipher::new("AES-256/GCM", botan::CipherDirection::Decrypt)
@@ -75,6 +145,9 @@ impl Packet {
         let signer = botan::Signer::new(privkey, "PKCS1v15(SHA-256)")
             .map_err(|e| anyhow::anyhow!("{:?}", e))?;
         signer.update(time_stamp.as_ref())
+            .and_then(|_| signer.update(aead_key.as_ref()))
+            .and_then(|_| signer.update(message.as_ref()))
+            .and_then(|_| signer.update(nonce.as_ref()))
             .map_err(|e| anyhow::anyhow!("{:?}", e))?;
         let aead_key = encryptor.encrypt(aead_key.as_ref(), &random)
             .map_err(|e| anyhow::anyhow!("{:?}", e))?;
@@ -92,19 +165,45 @@ impl Packet {
 
 #[cfg(test)]
 mod test {
+    use std::thread::sleep;
+    use std::time::Duration;
+
     use crate::crypto::Packet;
     use crate::server::JsonRequest;
+    extern crate test;
 
-    #[test]
-    fn test() {
+    #[async_std::test]
+    async fn no_duplicate_request() {
+        use xactor::Actor;
         let privk = botan::Privkey::load_encrypted_pem(include_str!("/code/keys/keeper_pri.pem"), "778878ZZzz").unwrap();
         let pubk = botan::Pubkey::load_pem(include_str!("/code/keys/keeper_pub.pem")).unwrap();
+        let mut actor = super::StampKeeper::start_default().await;
         let message = Packet::from_json_request(
             JsonRequest::ListPosts,
             &privk, &pubk,
         ).unwrap();
         println!("{:#?}", message);
-        println!("{:?}", message.to_json_request::<crate::server::JsonRequest>(&privk, &pubk));
+        println!("{:?}", message.to_json_request::<crate::server::JsonRequest>(&privk, &pubk,
+                                                                               Some(&mut actor)).await.unwrap());
+        assert!(message.to_json_request::<crate::server::JsonRequest>(&privk, &pubk,
+                                                                      Some(&mut actor)).await.is_err());
     }
+
+    #[async_std::test]
+    async fn timeout_detection() {
+        use xactor::Actor;
+        let privk = botan::Privkey::load_encrypted_pem(include_str!("/code/keys/keeper_pri.pem"), "778878ZZzz").unwrap();
+        let pubk = botan::Pubkey::load_pem(include_str!("/code/keys/keeper_pub.pem")).unwrap();
+        let mut actor = super::StampKeeper::start_default().await;
+        let message = Packet::from_json_request(
+            JsonRequest::ListPosts,
+            &privk, &pubk,
+        ).unwrap();
+        println!("{:#?}", message);
+        async_std::task::sleep(Duration::from_secs(super::TIME_OUT + 1)).await;
+        println!("{:?}", message.to_json_request::<crate::server::JsonRequest>(&privk, &pubk,
+                                                                               Some(&mut actor)).await.is_err());
+    }
+
 }
 

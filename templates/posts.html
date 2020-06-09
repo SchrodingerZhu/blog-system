@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <title>{{ blog_name }} | Posts</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+</head>
+<body>
+    <h1> All Posts </h1>
+    <ul>
+        {% for post in posts %}
+        <li>
+            <div class="post-box">
+                <h3><a href="/post/{{post.title}}.html">{{post.title}}</a></h3>
+                <p>{{post.date.to_string()}}</p>
+                <pre>
+                    <code class="language-markdown">
+                        {{post.get_abstract()}}
+                        more ...
+                    </code>
+                </pre>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</body>

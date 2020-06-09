@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <title>{{ post.title }}</title>
+    <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+    <script>
+        window.klipse_settings = {
+            selector_eval_js: '.language-klipse-eval-js',
+            selector_eval_cpp: '.language-klipse-cpp'
+        };
+    </script>
+</head>
+<body>
+    <h1> {{ post.title }} </h1>
+    <p> date: {{ post.date.to_string() }}</p>
+    {# The following part is the markdown rendered result #}
+    {{ post.render_content()|safe }}
+    {# The following part is the comments area #}
+    <div class="commit-submit">
+        <span> Submit New Commit </span>
+        <form action="/comment" method="post" id="comment-form">
+            <label for="comment_nickname"> Nickname:</label>
+            <input type="text" id="comment_nickname" name="comment_nickname">
+            <label for="comment_email"> Email:</label>
+            <input type="text" id="comment_email" name="comment_email">
+            <input type="hidden" id="post_id" name="post_id" value="{{post.id}}">
+            <input type="submit" value="Submit">
+        </form>
+        <textarea name="comment_content" form="comment-form">Enter armored signed content here...</textarea>
+    </div>
+    <ul>
+        {% for comment in comments %}
+        <li>
+            <p>Nickname: {{comment.nickname}}</p>
+            <p>Email: {{comment.email}}</p>
+            <p>FingerPrint: {{comment.finger_print}}</p>
+
+            {{comment.render_safe_content()|safe}}
+        </li>
+        {% endfor %}
+    </ul>
+    <script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
+
+
+</body>
