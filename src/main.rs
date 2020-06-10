@@ -19,7 +19,7 @@ use crate::template::PostTemplate;
 use std::path::Path;
 use serde::export::PhantomData;
 use async_std::prelude::Future;
-use crate::server::{serve_posts, serve_post, handle_comment, serve_tag};
+use crate::server::{serve_posts, serve_post, handle_comment, serve_tag, error_handle, serve_comment_signature, serve_tags};
 
 mod template;
 mod utils;
@@ -51,8 +51,10 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/posts").strip_prefix().get(serve_posts);
     http_server.at("/post").strip_prefix().get(serve_post);
     http_server.at("/tag").strip_prefix().get(serve_tag);
+    http_server.at("/tags").get(serve_tags);
+    http_server.at("/signature/comment").strip_prefix().get(serve_comment_signature);
     http_server.at("/comment").post(handle_comment);
-    http_server.middleware(tide::After(crate::server::error_handle));
+    http_server.middleware(tide::After(error_handle));
     http_server.listen(format!("{}:{}", address.as_ref(), port).as_str())
         .await
         .map_err(Into::into)

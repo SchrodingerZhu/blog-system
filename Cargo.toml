@@ -34,6 +34,7 @@ xactor = "*"
 ahash = { version = "0.3", features = ["compile-time-rng", "std"] }
 dotenv = "0.15"
 easy-hasher = "2.1.1"
+hashbrown = "*"
 [general]
 # Directories to search for templates, relative to the crate root.
 dirs = ["templates"]

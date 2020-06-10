@@ -2341,6 +2341,7 @@ dependencies = [
  "diesel",
  "dotenv",
  "easy-hasher",
+ "hashbrown",
  "http-types",
  "log",
  "postgres",

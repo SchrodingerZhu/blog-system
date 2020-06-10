@@ -65,10 +65,12 @@
             {% for comment in comments %}
             <li>
                 <p>Nickname: {{comment.nickname}}</p>
+                <p>Comment ID: {{comment.id}}</p>
                 <p>Email: {{comment.email}}</p>
                 <p>FingerPrint: {{comment.finger_print}}</p>
 
                 {{comment.render_safe_content()|safe}}
+                <a href="/signature/comment/{{comment.id}}">Raw Content</a>
             </li>
             {% endfor %}
         </ul>

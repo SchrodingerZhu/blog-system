@@ -10,6 +10,7 @@ use crate::{ConnPool, ServerState};
 use crate::model::{Comment, NewComment, Post};
 use crate::schema::comments::dsl::comments;
 use crate::template::{PostsTemplate, TagTemplate};
+use crate::schema::posts::dsl::posts;
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
@@ -209,5 +210,53 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
     let page = tag_template.render()?;
     Ok(
         normal_page(page)
+    )
+}
+
+pub async fn serve_comment_signature(request: Request<ServerState>) -> tide::Result<String> {
+    use crate::schema::comments::dsl::*;
+    let cid : i32 = request.url().path().trim_start_matches("/").parse()?;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let mut target : Vec<String> = comments.select(signature)
+        .filter(id.eq(cid))
+        .distinct()
+        .load(&conn)
+        .status(StatusCode::InternalServerError)?;
+    if target.is_empty() {
+        Err(tide::Error::from_str(StatusCode::NotFound, "No such comment"))
+    } else {
+        Ok(target.pop().unwrap())
+    }
+}
+
+#[derive(serde::Serialize)]
+struct Tag<'a> {
+    tag: &'a str,
+    count: i32
+}
+pub async fn serve_tags(request: Request<ServerState>) -> tide::Result<Response> {
+    use crate::schema::posts::dsl::*;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let all_tags : Vec<String> = posts.select(tags)
+        .load::<Vec<String>>(&conn)
+        .status(StatusCode::InternalServerError)?
+        .into_iter()
+        .flatten()
+        .collect();
+    let map = all_tags.iter()
+        .fold(hashbrown::HashMap::new(), |mut acc, next|{
+            *acc.entry(next).or_insert(0) += 1;
+            acc });
+    let mut tag_vector = Vec::new();
+    for (tag, count) in map {
+        tag_vector.push(Tag {tag, count});
+    }
+    let template = crate::template::TagsTemplate {
+        tags_json: simd_json::to_string(&tag_vector)?
+    };
+    Ok(
+        normal_page(template.render()?)
     )
 }

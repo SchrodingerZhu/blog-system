@@ -32,3 +32,9 @@ pub struct ErrorTemplate {
     pub code: String,
     pub message: Option<String>
 }
+
+#[derive(Template)]
+#[template(path = "tags.html")]
+pub struct TagsTemplate {
+    pub tags_json: String,
+}
