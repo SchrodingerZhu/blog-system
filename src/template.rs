@@ -13,7 +13,17 @@ pub struct PostTemplate {
 #[template(path = "posts.html")]
 pub struct PostsTemplate<'a> {
     pub blog_name: &'a str,
-    pub posts: Vec<Post>
+    pub posts: Vec<Post>,
+    pub page_number: i64
+}
+
+#[derive(Template)]
+#[template(path = "tag.html")]
+pub struct TagTemplate<'a> {
+    pub blog_name: &'a str,
+    pub name: &'a str,
+    pub posts: Vec<Post>,
+    pub page_number: i64
 }
 
 #[derive(Template)]

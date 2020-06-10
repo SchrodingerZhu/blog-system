@@ -1,4 +1,4 @@
-diesel::table! {
+table! {
     comments (id) {
         id -> Int4,
         post_id -> Int4,
@@ -7,11 +7,11 @@ diesel::table! {
         content -> Text,
         signature -> Text,
         finger_print -> Varchar,
+        sha3_512 -> Bytea,
     }
 }
 
-
-diesel::table! {
+table! {
     pages (id) {
         id -> Int4,
         title -> Varchar,
@@ -19,8 +19,7 @@ diesel::table! {
     }
 }
 
-
-diesel::table! {
+table! {
     posts (id) {
         id -> Int4,
         title -> Varchar,
@@ -31,11 +30,8 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(comments->posts(post_id));
-
-diesel::allow_tables_to_appear_in_same_query!(
+allow_tables_to_appear_in_same_query!(
     comments,
     pages,
     posts,
 );
-

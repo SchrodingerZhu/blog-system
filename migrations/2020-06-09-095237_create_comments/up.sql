@@ -6,5 +6,6 @@ CREATE TABLE comments (
     email VARCHAR NOT NULL CONSTRAINT proper_email CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
     content TEXT NOT NULL,
     signature TEXT NOT NULL,
-    finger_print VARCHAR NOT NULL
+    finger_print VARCHAR NOT NULL,
+    sha3_512 BYTEA NOT NULL UNIQUE
 )

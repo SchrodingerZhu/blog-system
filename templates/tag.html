@@ -2,14 +2,14 @@
 <head>
     <meta charset="UTF-8">
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-    <title>{{ blog_name }} | Posts</title>
+    <title>{{blog_name}} | Posts</title>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
 </head>
 <body>
-    <h1> All Posts | Page {{page_number}} </h1>
+    <h1> Tag: {{name}} | Page {{page_number}} </h1>
     {% if posts.len() > 0 %}
     <ul>
         {% for post in posts %}

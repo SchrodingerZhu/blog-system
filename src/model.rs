@@ -50,7 +50,8 @@ pub struct Comment {
     pub email: String,
     pub content: String,
     pub signature: String,
-    pub finger_print: String
+    pub finger_print: String,
+    pub sha3_512: Vec<u8>
 }
 
 #[derive(Insertable)]
@@ -61,7 +62,8 @@ pub struct NewComment<'a> {
     pub email: &'a str,
     pub content: &'a str,
     pub signature: &'a str,
-    pub finger_print: &'a str
+    pub finger_print: &'a str,
+    pub sha3_512: &'a [u8]
 }
 
 impl Comment {

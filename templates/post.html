@@ -33,9 +33,20 @@
     <p> date: {{ post.date.to_string() }}</p>
     {# The following part is the markdown rendered result #}
     {{ post.render_content()|safe }}
+
+    <div class="tag area">
+        <h2>Tags</h2>
+        <ul>
+            {% for tag in post.tags %}
+            <li>
+                <a href="/tag/{{tag}}">{{tag}}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
     {# The following part is the comments area #}
     <div class="commit-submit">
-        <span> Submit New Commit </span>
+        <h2> Submit New Comment </h2>
         <form action="/comment" method="post" id="comment-form">
             <label for="comment_nickname"> Nickname:</label>
             <input type="text" id="comment_nickname" name="comment_nickname">
@@ -46,17 +57,20 @@
         </form>
         <textarea name="comment_content" form="comment-form">Enter armored signed content here...</textarea>
     </div>
-    <ul>
-        {% for comment in comments %}
-        <li>
-            <p>Nickname: {{comment.nickname}}</p>
-            <p>Email: {{comment.email}}</p>
-            <p>FingerPrint: {{comment.finger_print}}</p>
+    <div class="comment-area">
+        <h2> Comments </h2>
+        <ul>
+            {% for comment in comments %}
+            <li>
+                <p>Nickname: {{comment.nickname}}</p>
+                <p>Email: {{comment.email}}</p>
+                <p>FingerPrint: {{comment.finger_print}}</p>
 
-            {{comment.render_safe_content()|safe}}
-        </li>
-        {% endfor %}
-    </ul>
+                {{comment.render_safe_content()|safe}}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
     <script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
 
 
