@@ -56,3 +56,10 @@ pub struct TagsTemplate<'a> {
     pub blog_name: &'a str,
     pub tags: Vec<Tag<'a>>
 }
+
+#[derive(Template)]
+#[template(path = "remove_comment.html")]
+pub struct RemoveCommentTemplate<'a> {
+    pub json: String,
+    pub blog_name: &'a str,
+}

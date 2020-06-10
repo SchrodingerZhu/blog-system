@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{blog_name}}| Remove Comment{% endblock %}
+
+{% block head %}
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
+<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+{% endblock %}
+
+{% block body %}
+
+<h3>Please Clear Sign the Following Json:</h3>
+
+<pre>
+<code>
+{{json}}
+</code>
+</pre>
+
+<form action="/comment/remove" method="post">
+    <div class="form-group">
+        <label for="signed_content">Signed Content</label>
+        <textarea class="form-control" id="signed_content" name="signed_content"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}

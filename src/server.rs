@@ -4,12 +4,10 @@ use std::pin::Pin;
 use askama::Template;
 use async_std::prelude::Future;
 use diesel::prelude::*;
-use tide::{Request, Response, Status, StatusCode};
+use tide::{Request, Response, Status, StatusCode, Redirect};
 
 use crate::{ConnPool, ServerState};
 use crate::model::{Comment, NewComment, Post, POST_COLUMNS};
-use crate::schema::comments::dsl::comments;
-use crate::schema::posts::dsl::posts;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
@@ -22,11 +20,6 @@ pub enum JsonRequest {
     ListPosts
 }
 
-pub struct PostsEndpoint {
-    pool: ConnPool,
-    blog_name: String,
-}
-
 pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Response> {
     use crate::schema::posts::dsl::*;
     let conn = request
@@ -36,7 +29,6 @@ pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Re
             .path()
             .trim()
             .trim_start_matches("/");
-        log::error!("{}", pat);
         if pat.is_empty() { 0 } else { pat.parse()? }
     };
     let all_posts = posts
@@ -96,23 +88,18 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let name = path.trim_end_matches(".html");
-    let mut post: Vec<Post> = p::posts
+    let post: Post = p::posts
         .select(POST_COLUMNS)
         .filter(p::title.eq(name))
-        .distinct().load::<Post>(&conn)?;
-    if post.is_empty() {
-        Ok(Response::new(StatusCode::NotFound))
-    } else {
-        let post = post.pop().unwrap();
-        let all_comments = Comment::belonging_to(&post)
-            .load::<Comment>(&conn)?;
-        let template = crate::template::PostTemplate {
-            post,
-            comments: all_comments,
-        };
-        let page = template.render()?;
-        Ok(normal_page(page))
-    }
+        .first::<Post>(&conn)?;
+    let all_comments = Comment::belonging_to(&post)
+        .load::<Comment>(&conn)?;
+    let template = crate::template::PostTemplate {
+        post,
+        comments: all_comments,
+    };
+    let page = template.render()?;
+    Ok(normal_page(page))
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -124,7 +111,7 @@ pub struct CommentForm {
 }
 
 
-pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<String> {
+pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl as p;
     use crate::schema::comments::dsl as c;
     let conn = request
@@ -142,45 +129,26 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<S
             return Err(tide::Error::from_str(StatusCode::BadRequest, "invalid post id"));
         }
     }
-    let mut to_verify = tempfile::NamedTempFile::new()?;
-    to_verify.write(form.comment_content.as_bytes())?;
-    to_verify.flush()?;
-    let output = std::process::Command::new("gpg")
-        .arg("--decrypt")
-        .arg(to_verify.path())
-        .output()?;
-    if !output.status.success() {
-        return Err(tide::Error::from_str(StatusCode::BadRequest, "invalid signature"));
-    }
-    let real_content: String = String::from_utf8(output.stdout)?;
-    let content = String::from_utf8(output.stderr)?;
-    let mut lines = content.lines();
-    lines.next();
-    if let Some(content) = lines.next() {
-        let mut words = content.split_whitespace();
-        words.next();
-        words.next();
-        words.next();
-        words.next();
-        if let Some(finger_print) = words.next() {
-            let hash = easy_hasher::easy_hasher::sha3_512(&form.comment_content)
-                .to_vec();
-            let comment = NewComment {
-                post_id: form.post_id,
-                nickname: form.comment_nickname.as_str(),
-                email: form.comment_email.as_str(),
-                content: real_content.as_str(),
-                signature: form.comment_content.as_str(),
-                finger_print,
-                sha3_512: &hash,
-            };
-            diesel::insert_into(c::comments)
-                .values(&comment)
-                .execute(&conn)?;
-            return Ok("success".to_string());
-        }
-    }
-    Err(tide::Error::from_str(StatusCode::BadRequest, "unable to parse request"))
+    let (real_content, finger_print) = crate::utils::gpg_decrypt(form.comment_content.as_str())
+        .map_err(|x| tide::Error::from_str(StatusCode::BadRequest, "verification error"))?;
+
+    let hash = easy_hasher::easy_hasher::sha3_512(&form.comment_content)
+        .to_vec();
+    let comment = NewComment {
+        post_id: form.post_id,
+        nickname: form.comment_nickname.as_str(),
+        email: form.comment_email.as_str(),
+        content: real_content.as_str(),
+        signature: form.comment_content.as_str(),
+        finger_print: finger_print.as_str(),
+        sha3_512: &hash,
+    };
+    diesel::insert_into(c::comments)
+        .values(&comment)
+        .execute(&conn)?;
+    let title : String = p::posts.select(p::title).filter(p::id.eq(form.post_id))
+        .first(&conn)?;
+    Ok(Redirect::new(format!("/post/{}.html", title)).into())
 }
 
 pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Response> {
@@ -222,16 +190,11 @@ pub async fn serve_comment_signature(request: Request<ServerState>) -> tide::Res
         .status(StatusCode::BadRequest)?;
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
-    let mut target: Vec<String> = comments.select(signature)
+    let target: String = comments.select(signature)
         .filter(id.eq(cid))
-        .distinct()
-        .load(&conn)
+        .first(&conn)
         .status(StatusCode::InternalServerError)?;
-    if target.is_empty() {
-        Err(tide::Error::from_str(StatusCode::NotFound, "No such comment"))
-    } else {
-        Ok(target.pop().unwrap())
-    }
+    Ok(target)
 }
 
 pub async fn serve_post_signature(request: Request<ServerState>) -> tide::Result<String> {
@@ -240,16 +203,12 @@ pub async fn serve_post_signature(request: Request<ServerState>) -> tide::Result
         .status(StatusCode::BadRequest)?;
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
-    let mut target: Vec<String> = posts.select(signature)
+    let target: String = posts.select(signature)
         .filter(id.eq(cid))
-        .distinct()
-        .load(&conn)
+        .first(&conn)
         .status(StatusCode::InternalServerError)?;
-    if target.is_empty() {
-        Err(tide::Error::from_str(StatusCode::NotFound, "No such post"))
-    } else {
-        Ok(target.pop().unwrap())
-    }
+
+    Ok(target)
 }
 
 
@@ -294,8 +253,8 @@ pub async fn handle_search(mut request: Request<ServerState>) -> tide::Result<Re
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let all_posts = crate::model::Post::list(&conn,
-                                         form.search.as_str(),
-                                         form.page_number)?;
+                                             form.search.as_str(),
+                                             form.page_number)?;
     let template = crate::template::PostsSearch {
         blog_name: request.state().blog_name.as_str(),
         posts: all_posts,
@@ -307,3 +266,73 @@ pub async fn handle_search(mut request: Request<ServerState>) -> tide::Result<Re
         normal_page(template.render()?)
     )
 }
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct RemoveComment {
+    id: i32,
+    time_stamp: std::time::SystemTime,
+}
+
+pub async fn remove_comment(request: Request<ServerState>) -> tide::Result<Response> {
+    use crate::schema::comments::dsl::*;
+    let cid: i32 = request.url().path().trim_start_matches("/").parse()
+        .status(StatusCode::BadRequest)?;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    match diesel::dsl::select(diesel::dsl::exists(comments.filter(id.eq(cid))))
+        .get_result(&conn) {
+        Ok(true) => (),
+        _ => {
+            return Err(tide::Error::from_str(StatusCode::BadRequest, "invalid post id"));
+        }
+    }
+    let remove_comment = RemoveComment {
+        id: cid,
+        time_stamp: std::time::SystemTime::now(),
+    };
+
+    let json = simd_json::to_string(&remove_comment)?;
+
+    let template = crate::template::RemoveCommentTemplate {
+        json,
+        blog_name: request.state().blog_name.as_str(),
+    };
+
+    Ok(
+        normal_page(template.render()?)
+    )
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct RemoveCommentForm {
+    signed_content: String
+}
+
+pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::Result<Response> {
+
+    use crate::schema::comments::dsl::*;
+    use crate::schema::posts::dsl as p;
+    let body: RemoveCommentForm = request.body_form().await?;
+    let (mut raw_json, fp) = crate::utils::gpg_decrypt(body.signed_content.as_str())
+        .map_err(|_| tide::Error::from_str(StatusCode::BadRequest, "verification error"))?;
+    let remove: RemoveComment = simd_json::from_str(raw_json.as_mut_str())?;
+    let now = std::time::SystemTime::now();
+    let duration = now.duration_since(remove.time_stamp)?;
+    if duration.as_secs() > 60 * 5 {
+        return Err(tide::Error::from_str(StatusCode::RequestTimeout, "request timeout"));
+    }
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let (cfp, cpost_id) : (String, i32) = comments
+        .select((finger_print, post_id))
+        .filter(id.eq(remove.id)).first(&conn)?;
+    if cfp != fp {
+        Err(tide::Error::from_str(StatusCode::Unauthorized, "fingerprint does not match"))
+    } else {
+        diesel::delete(comments.filter(id.eq(remove.id))).execute(&conn)?;
+        let ctitle : String = p::posts.select(p::title).filter(p::id.eq(cpost_id))
+            .first(&conn)?;
+        Ok(Redirect::new(format!("/post/{}.html", ctitle)).into())
+    }
+}
+

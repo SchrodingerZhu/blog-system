@@ -49,7 +49,7 @@
     {# The following part is the comments area #}
     <div class="commit-submit">
         <h2> Submit New Comment </h2>
-        <form action="/comment" method="post" class="form-group" id="comment-form">
+        <form action="/comment/submit" method="post" class="form-group" id="comment-form">
             <label for="comment_nickname"> Nickname:</label>
             <input type="text" class="form-control" id="comment_nickname" name="comment_nickname">
             <label for="comment_email"> Email:</label>
@@ -70,7 +70,8 @@
                 <p>FingerPrint: {{comment.finger_print}}</p>
 
                 {{comment.render_safe_content()|safe}}
-                <a href="/signature/comment/{{comment.id}}">Raw Content</a>
+                <a href="/signature/comment/{{comment.id}}" class="btn btn-primary">Raw Content</a>
+                <a href="/comment/remove/{{comment.id}}" class="btn btn-primary">Delete Content</a>
             </li>
             {% endfor %}
         </ul>
