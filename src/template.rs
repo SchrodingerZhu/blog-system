@@ -27,5 +27,8 @@ pub struct TagTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "404.html")]
-pub struct NotFound;
+#[template(path = "error.html")]
+pub struct ErrorTemplate {
+    pub code: String,
+    pub message: Option<String>
+}

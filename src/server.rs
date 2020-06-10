@@ -66,15 +66,21 @@ pub fn normal_page<A: Into<tide::Body>>(page: A) -> tide::Response {
     responce
 }
 
-pub async fn not_found(result: tide::Result<Response>) -> tide::Result<tide::Response> {
-    let mut responce = result.unwrap_or_else(|e| Response::new(e.status()));
-    if let StatusCode::NotFound = responce.status() {
-        let page = crate::template::NotFound;
-        responce.set_body(page.render()?);
-        responce.set_content_type(http_types::mime::HTML);
+pub async fn error_handle(result: tide::Result<Response>) -> tide::Result<tide::Response> {
+    let mut response = result.map(|x| (None, x)).unwrap_or_else(|e| {
+        let status = e.status();
+        (Some(e), Response::new(status))
+    });
+    if !response.1.status().is_success() {
+        let page = crate::template::ErrorTemplate {
+            code: response.1.status().to_string(),
+            message: response.0.map(|x| x.to_string()),
+        };
+        response.1.set_body(page.render()?);
+        response.1.set_content_type(http_types::mime::HTML);
     }
     Ok(
-        responce
+        response.1
     )
 }
 

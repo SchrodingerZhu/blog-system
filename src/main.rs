@@ -52,7 +52,7 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/post").strip_prefix().get(serve_post);
     http_server.at("/tag").strip_prefix().get(serve_tag);
     http_server.at("/comment").post(handle_comment);
-    http_server.middleware(tide::After(crate::server::not_found));
+    http_server.middleware(tide::After(crate::server::error_handle));
     http_server.listen(format!("{}:{}", address.as_ref(), port).as_str())
         .await
         .map_err(Into::into)
@@ -62,8 +62,9 @@ async fn start_server<A: AsRef<str>,
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
     tide::log::start();
-    let manager = diesel::r2d2::ConnectionManager::<diesel::pg::PgConnection>
-    ::new("postgres://schrodinger@localhost/testdb");
+    let manager =
+        diesel::r2d2::ConnectionManager::<diesel::pg::PgConnection>
+        ::new("postgres://schrodinger@localhost/testdb");
     let pool = diesel::r2d2::Pool::new(manager)?;
     start_server("0.0.0.0", 8080, ".", pool).await?;
     Ok(())
