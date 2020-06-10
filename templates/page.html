@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %} {{ blog_name }} | {{ page.title }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
+<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']]
+        },
+        svg: {
+            fontCache: 'global'
+        }
+    };
+</script>
+<script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+</script>
+<script>
+    window.klipse_settings = {
+        selector_eval_js: '.language-klipse-eval-js',
+        selector_eval_cpp: '.language-klipse-cpp'
+    };
+</script>
+{% endblock %}
+
+{% block body %}
+<h1> {{ page.title }} </h1>
+<div class="shadow p-3 mb-5 bg-white rounded">
+    {# The following part is the markdown rendered result #}
+    {{ page.render_content()|safe }}
+
+
+    <p>
+        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapse-raw"
+                aria-expanded="false" aria-controls="collapse-raw">
+            Raw Content
+        </button>
+
+        <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapse-id"
+                aria-expanded="false" aria-controls="collapse-id">
+            Information
+        </button>
+    </p>
+    <div class="collapse" id="collapse-raw">
+        <div class="card card-body">
+        <pre><code class="language-markdown">
+{{ page.content }}
+        </code></pre>
+        </div>
+    </div>
+
+    <div class="collapse" id="collapse-id">
+        <div class="card card-body">
+            <p>ID: {{ page.id }}</p>
+            <p>Title: {{ page.title }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block appendix %}
+<script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
+{% endblock %}

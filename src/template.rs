@@ -1,6 +1,6 @@
 use askama::*;
 use chrono::Utc;
-use crate::model::{Post, Comment};
+use crate::model::{Post, Comment, Page};
 use serde::export::Formatter;
 
 #[derive(Template)]
@@ -62,4 +62,11 @@ pub struct TagsTemplate<'a> {
 pub struct RemoveCommentTemplate<'a> {
     pub json: String,
     pub blog_name: &'a str,
+}
+
+#[derive(Template)]
+#[template(path = "page.html")]
+pub struct PageTemplate<'a> {
+    pub blog_name: &'a str,
+    pub page: &'a Page,
 }

@@ -7,7 +7,7 @@ use diesel::prelude::*;
 use tide::{Request, Response, Status, StatusCode, Redirect};
 
 use crate::{ConnPool, ServerState};
-use crate::model::{Comment, NewComment, Post, POST_COLUMNS};
+use crate::model::{Comment, NewComment, Post, POST_COLUMNS, Page};
 use crate::template::{PostsTemplate, Tag, TagTemplate};
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
@@ -97,6 +97,27 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let template = crate::template::PostTemplate {
         post,
         comments: all_comments,
+    };
+    let page = template.render()?;
+    Ok(normal_page(page))
+}
+
+pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response> {
+    use crate::schema::pages::dsl as p;
+    use crate::schema::comments::dsl as c;
+    let path = request.url().path().trim_start_matches("/");
+    if path.contains('/') || !path.ends_with(".html") {
+        return Ok(Response::new(StatusCode::NotFound));
+    }
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let name = path.trim_end_matches(".html");
+    let page = p::pages
+        .filter(p::title.eq(name))
+        .first::<Page>(&conn)?;
+    let template = crate::template::PageTemplate{
+        blog_name: request.state().blog_name.as_str(),
+        page: &page
     };
     let page = template.render()?;
     Ok(normal_page(page))

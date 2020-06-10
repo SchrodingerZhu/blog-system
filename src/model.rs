@@ -77,6 +77,14 @@ impl Comment {
     }
 }
 
+impl Page {
+    pub fn render_content(&self) -> String {
+        let cmark = pulldown_cmark::Parser::new(self.content.as_str());
+        let mut buffer = String::with_capacity(1024);
+        pulldown_cmark::html::push_html(&mut buffer, cmark);
+        buffer
+    }
+}
 
 pub type PostColumns = (
     crate::schema::posts::id,

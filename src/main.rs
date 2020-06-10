@@ -19,7 +19,7 @@ use crate::template::PostTemplate;
 use std::path::Path;
 use serde::export::PhantomData;
 use async_std::prelude::Future;
-use crate::server::{serve_posts, serve_post, handle_comment, serve_tag, error_handle, serve_comment_signature, serve_tags, serve_post_signature, handle_search, remove_comment, handle_remove_comment};
+use crate::server::{serve_posts, serve_post, handle_comment, serve_tag, error_handle, serve_comment_signature, serve_tags, serve_post_signature, handle_search, remove_comment, handle_remove_comment, serve_page};
 
 mod template;
 mod utils;
@@ -50,6 +50,7 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
     http_server.at("/posts").strip_prefix().get(serve_posts);
     http_server.at("/post").strip_prefix().get(serve_post);
+    http_server.at("/page").strip_prefix().get(serve_page);
     http_server.at("/tag").strip_prefix().get(serve_tag);
     http_server.at("/tags").get(serve_tags);
     http_server.at("/search").post(handle_search);
