@@ -1,6 +1,8 @@
 use chrono::Utc;
 use crate::schema::{posts, comments, pages};
-
+use diesel::Queryable;
+use crate::Conn;
+use http_types::{StatusCode, Status};
 #[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug)]
 pub struct Post {
     pub id: i32,
@@ -24,14 +26,14 @@ impl Post {
     }
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug, Clone, diesel::AsChangeset)]
 #[table_name="posts"]
 pub struct NewPost<'a> {
-    pub title: &'a str,
-    pub date: &'a chrono::NaiveDateTime,
-    pub tags: &'a [String],
-    pub content: &'a str,
-    pub signature: &'a str
+    pub title: Option<&'a str>,
+    pub date: Option<&'a chrono::NaiveDateTime>,
+    pub tags: Option<&'a [String]>,
+    pub content: Option<&'a str>,
+    pub signature: Option<&'a str>
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable)]
@@ -74,3 +76,48 @@ impl Comment {
         ammonia::clean(buffer.as_str())
     }
 }
+
+
+pub type PostColumns = (
+    crate::schema::posts::id,
+    crate::schema::posts::title,
+    crate::schema::posts::date,
+    crate::schema::posts::tags,
+    crate::schema::posts::content,
+    crate::schema::posts::signature,
+);
+
+
+pub const POST_COLUMNS: PostColumns = (
+    crate::schema::posts::id,
+    crate::schema::posts::title,
+    crate::schema::posts::date,
+    crate::schema::posts::tags,
+    crate::schema::posts::content,
+    crate::schema::posts::signature,
+);
+
+impl Post {
+    pub fn list(connection: &Conn, search: &str, page_number: i64) -> tide::Result<Vec<Self>> {
+        use diesel::RunQueryDsl;
+        use diesel::QueryDsl;
+        use diesel::pg::Pg;
+        use crate::schema::posts::dsl::*;
+        use crate::schema;
+        use diesel_full_text_search::{plainto_tsquery, TsVectorExtensions};
+
+        let mut query = schema::posts::table.into_boxed::<Pg>();
+
+        if !search.is_empty() {
+            query = query
+                .filter(text_searchable.matches(plainto_tsquery(search)));
+        }
+        query
+            .select(POST_COLUMNS)
+            .limit(20)
+            .offset(page_number * 20)
+            .load::<Post>(connection)
+            .status(StatusCode::InternalServerError)
+    }
+}
+

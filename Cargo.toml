@@ -18,7 +18,7 @@ anyhow = "1"
 postgres = "0.17"
 http-types = "2"
 tempfile = "3.1.0"
-diesel = { version = "1.4.4", features = ["postgres", "extras", "unstable"]}
+diesel = { version = "1.4.5", features = ["postgres", "extras", "unstable"]}
 pretty_env_logger = "0.4.0"
 log = "0.4"
 askama = "0.9.0"
@@ -35,6 +35,11 @@ ahash = { version = "0.3", features = ["compile-time-rng", "std"] }
 dotenv = "0.15"
 easy-hasher = "2.1.1"
 hashbrown = "*"
+diesel_full_text_search = { git = "https://github.com/SchrodingerZhu/diesel_full_text_search" }
 [general]
 # Directories to search for templates, relative to the crate root.
 dirs = ["templates"]
+
+[profile.release]
+opt-level = 3
+lto = "fat"

@@ -1,4 +1,4 @@
-table! {
+diesel::table! {
     comments (id) {
         id -> Int4,
         post_id -> Int4,
@@ -11,7 +11,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     pages (id) {
         id -> Int4,
         title -> Varchar,
@@ -19,7 +19,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     posts (id) {
         id -> Int4,
         title -> Varchar,
@@ -27,11 +27,14 @@ table! {
         tags -> Array<Text>,
         content -> Text,
         signature -> Text,
+        text_searchable -> diesel_full_text_search::TsVector,
     }
 }
 
-allow_tables_to_appear_in_same_query!(
+diesel::allow_tables_to_appear_in_same_query!(
     comments,
     pages,
     posts,
 );
+
+diesel::joinable!(comments -> posts (post_id));

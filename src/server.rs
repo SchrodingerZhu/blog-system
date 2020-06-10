@@ -7,10 +7,10 @@ use diesel::prelude::*;
 use tide::{Request, Response, Status, StatusCode};
 
 use crate::{ConnPool, ServerState};
-use crate::model::{Comment, NewComment, Post};
+use crate::model::{Comment, NewComment, Post, POST_COLUMNS};
 use crate::schema::comments::dsl::comments;
-use crate::template::{PostsTemplate, TagTemplate};
 use crate::schema::posts::dsl::posts;
+use crate::template::{PostsTemplate, Tag, TagTemplate};
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
@@ -40,6 +40,7 @@ pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Re
         if pat.is_empty() { 0 } else { pat.parse()? }
     };
     let all_posts = posts
+        .select(POST_COLUMNS)
         .limit(20)
         .offset(page_number * 20)
         .load::<Post>(&conn)
@@ -95,7 +96,9 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let name = path.trim_end_matches(".html");
-    let mut post: Vec<Post> = p::posts.filter(p::title.eq(name))
+    let mut post: Vec<Post> = p::posts
+        .select(POST_COLUMNS)
+        .filter(p::title.eq(name))
         .distinct().load::<Post>(&conn)?;
     if post.is_empty() {
         Ok(Response::new(StatusCode::NotFound))
@@ -186,7 +189,6 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let url = request.url().path().trim_start_matches("/");
     let url_split = url.split("/").collect::<Vec<&str>>();
-    log::warn!("{:?}", url_split);
     if url_split.len() != 1 && url_split.len() != 2 {
         return Err(tide::Error::from_str(StatusCode::BadRequest, "unable to parse request url"));
     }
@@ -195,6 +197,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
     } else { 0 };
 
     let all_posts = posts
+        .select(POST_COLUMNS)
         .filter(tags.contains(vec![url_split[0]]))
         .limit(20)
         .offset(page_number * 20)
@@ -215,10 +218,11 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
 
 pub async fn serve_comment_signature(request: Request<ServerState>) -> tide::Result<String> {
     use crate::schema::comments::dsl::*;
-    let cid : i32 = request.url().path().trim_start_matches("/").parse()?;
+    let cid: i32 = request.url().path().trim_start_matches("/").parse()
+        .status(StatusCode::BadRequest)?;
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
-    let mut target : Vec<String> = comments.select(signature)
+    let mut target: Vec<String> = comments.select(signature)
         .filter(id.eq(cid))
         .distinct()
         .load(&conn)
@@ -230,32 +234,75 @@ pub async fn serve_comment_signature(request: Request<ServerState>) -> tide::Res
     }
 }
 
-#[derive(serde::Serialize)]
-struct Tag<'a> {
-    tag: &'a str,
-    count: i32
+pub async fn serve_post_signature(request: Request<ServerState>) -> tide::Result<String> {
+    use crate::schema::posts::dsl::*;
+    let cid: i32 = request.url().path().trim_start_matches("/").parse()
+        .status(StatusCode::BadRequest)?;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let mut target: Vec<String> = posts.select(signature)
+        .filter(id.eq(cid))
+        .distinct()
+        .load(&conn)
+        .status(StatusCode::InternalServerError)?;
+    if target.is_empty() {
+        Err(tide::Error::from_str(StatusCode::NotFound, "No such post"))
+    } else {
+        Ok(target.pop().unwrap())
+    }
 }
+
+
 pub async fn serve_tags(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl::*;
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
-    let all_tags : Vec<String> = posts.select(tags)
+    let all_tags: Vec<String> = posts.select(tags)
         .load::<Vec<String>>(&conn)
         .status(StatusCode::InternalServerError)?
         .into_iter()
         .flatten()
         .collect();
     let map = all_tags.iter()
-        .fold(hashbrown::HashMap::new(), |mut acc, next|{
+        .fold(hashbrown::HashMap::new(), |mut acc, next| {
             *acc.entry(next).or_insert(0) += 1;
-            acc });
+            acc
+        });
     let mut tag_vector = Vec::new();
-    for (tag, count) in map {
-        tag_vector.push(Tag {tag, count});
+    for (tag, count) in &map {
+        tag_vector.push(Tag { tag, count: *count });
     }
+    tag_vector.sort_by(|x, y| y.cmp(x));
     let template = crate::template::TagsTemplate {
-        tags_json: simd_json::to_string(&tag_vector)?
+        tags_json: simd_json::to_string(&tag_vector)?,
+        tags: tag_vector,
+        blog_name: request.state().blog_name.as_str(),
     };
+    Ok(
+        normal_page(template.render()?)
+    )
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+struct SearchForm {
+    search: String,
+    page_number: i64,
+}
+
+pub async fn handle_search(mut request: Request<ServerState>) -> tide::Result<Response> {
+    let form: SearchForm = request.body_form().await?;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let all_posts = crate::model::Post::list(&conn,
+                                         form.search.as_str(),
+                                         form.page_number)?;
+    let template = crate::template::PostsSearch {
+        blog_name: request.state().blog_name.as_str(),
+        posts: all_posts,
+        page_number: form.page_number,
+        search: form.search.as_str(),
+    };
+
     Ok(
         normal_page(template.render()?)
     )

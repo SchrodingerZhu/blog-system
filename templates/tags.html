@@ -1,7 +1,6 @@
-<!DOCTYPE html>
-<head>
-    <meta charset="UTF-8">
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+{% extends "base.html" %}
+{% block title %}{{ blog_name }} | Tag {% endblock %}
+{% block head %}
     <style>
         #chartdiv {
             width: 100%;
@@ -60,7 +59,21 @@
         }); // end am4core.ready()
     </script>
 
-</head>
-<body>
+{% endblock %}
+{% block body %}
     <div id="chartdiv"></div>
-</body>
+    <ul class="list-group">
+        {% for tag in tags %}
+        <a href="/tag/{{tag.tag}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            {{tag.tag}}
+            <span class="badge badge-primary badge-pill">{{tag.count}}</span>
+        </a>
+        {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block appendix %}
+<script>
+    document.getElementById("nav-tags").classList.add("active");
+</script>
+{% endblock %}

@@ -1,40 +1,96 @@
-<!DOCTYPE html>
-<head>
-    <meta charset="UTF-8">
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-    <title>{{ blog_name }} | Posts</title>
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
-    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
-    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
-</head>
-<body>
-    <h1> All Posts | Page {{page_number}} </h1>
-    {% if posts.len() > 0 %}
-    <ul>
-        {% for post in posts %}
-        <li>
-            <div class="post-box">
-                <h3><a href="/post/{{post.title}}.html">{{post.title}}</a></h3>
-                <p>{{post.date.to_string()}}</p>
-                <pre>
+{% extends "base.html" %}
+{% block title %}{{ blog_name }} | Posts{% endblock %}
+{% block head %}
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
+<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+{% endblock %}
+{% block body %}
+<h1> All Posts | Page {{page_number}} </h1>
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
+    Search Post
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Search Post</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="search-input" class="form-control" placeholder="search" aria-label="search"
+                           aria-describedby="button-addon2">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" id="button-addon2" onclick="redirectPost()">
+                            Action
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% if posts.len() > 0 %}
+<ul>
+    {% for post in posts %}
+    <li>
+        <div class="post-box">
+            <h3><a href="/post/{{post.title}}.html">{{post.title}}</a></h3>
+            <p>{{post.date.to_string()}}</p>
+            <pre>
                     <code class="language-markdown">
                         {{post.get_abstract()}}
                         more ...
                     </code>
                 </pre>
-            </div>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else -%}
-    <span> NO MORE~ </span>
-    {% endif -%}
-
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else -%}
+<span> NO MORE~ </span>
+{% endif -%}
+<ul class="pagination">
     {% if page_number > 0 %}
-    <a href="/posts/{{page_number - 1}}"> Previous Page </a>
+    <li class="page-item"><a class="page-link" href="/posts/{{page_number - 1}}"> Previous Page </a></li>
     {% endif %}
     {% if posts.len() > 0 %}
-    <a href="/posts/{{page_number + 1}}"> Next Page </a>
+    <li class="page-item"><a class="page-link" href="/posts/{{page_number + 1}}"> Next Page </a></li>
     {% endif %}
-</body>
+</ul>
+{% endblock %}
+
+{% block appendix %}
+<script>
+    document.getElementById("nav-posts").classList.add("active");
+    function redirectPost() {
+        const realInput = document.getElementById("search-input");
+        let form = document.createElement('form');
+        document.body.appendChild(form);
+        form.method = 'post';
+        form.action = '/search';
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'search';
+        input.value = realInput.value;
+        let number = document.createElement('input');
+        number.type = 'hidden';
+        number.name = 'page_number';
+        number.value = '0';
+        form.appendChild(input);
+        form.appendChild(number);
+        form.submit();
+    }
+</script>
+{% endblock %}

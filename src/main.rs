@@ -19,7 +19,7 @@ use crate::template::PostTemplate;
 use std::path::Path;
 use serde::export::PhantomData;
 use async_std::prelude::Future;
-use crate::server::{serve_posts, serve_post, handle_comment, serve_tag, error_handle, serve_comment_signature, serve_tags};
+use crate::server::{serve_posts, serve_post, handle_comment, serve_tag, error_handle, serve_comment_signature, serve_tags, serve_post_signature, handle_search};
 
 mod template;
 mod utils;
@@ -52,7 +52,9 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/post").strip_prefix().get(serve_post);
     http_server.at("/tag").strip_prefix().get(serve_tag);
     http_server.at("/tags").get(serve_tags);
+    http_server.at("/search").post(handle_search);
     http_server.at("/signature/comment").strip_prefix().get(serve_comment_signature);
+    http_server.at("/signature/post").strip_prefix().get(serve_post_signature);
     http_server.at("/comment").post(handle_comment);
     http_server.middleware(tide::After(error_handle));
     http_server.listen(format!("{}:{}", address.as_ref(), port).as_str())
@@ -63,6 +65,7 @@ async fn start_server<A: AsRef<str>,
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
+    use schema::posts::dsl::*;
     tide::log::start();
     let manager =
         diesel::r2d2::ConnectionManager::<diesel::pg::PgConnection>

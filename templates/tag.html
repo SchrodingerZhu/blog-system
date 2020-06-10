@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<head>
-    <meta charset="UTF-8">
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-    <title>{{blog_name}} | Posts</title>
+{% extends "base.html" %}
+{% block title %}{{ blog_name }} | Tag {{name}} {% endblock %}
+{% block head %}
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
     <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
-</head>
-<body>
+{% endblock %}
+{% block body %}
     <h1> Tag: {{name}} | Page {{page_number}} </h1>
     {% if posts.len() > 0 %}
     <ul>
@@ -30,11 +28,17 @@
     {% else -%}
     <span> NO MORE~ </span>
     {% endif -%}
-
-    {% if page_number > 0 %}
-    <a href="/posts/{{page_number - 1}}"> Previous Page </a>
-    {% endif %}
-    {% if posts.len() > 0 %}
-    <a href="/posts/{{page_number + 1}}"> Next Page </a>
-    {% endif %}
-</body>
+    <ul class="pagination">
+        {% if page_number > 0 %}
+        <li class="page-item"><a class="page-link" href="/tag/{{name}}/{{page_number - 1}}"> Previous Page </a></li>
+        {% endif %}
+        {% if posts.len() > 0 %}
+        <li class="page-item"><a class="page-link" href="/tag/{{name}}/{{page_number + 1}}"> Next Page </a></li>
+        {% endif %}
+    </ul>
+{% endblock %}
+{% block appendix %}
+    <script>
+        document.getElementById("nav-tags").classList.add("active");
+    </script>
+{% endblock %}

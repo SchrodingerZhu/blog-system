@@ -1,6 +1,7 @@
 use askama::*;
 use chrono::Utc;
 use crate::model::{Post, Comment};
+use serde::export::Formatter;
 
 #[derive(Template)]
 #[template(path = "post.html")]
@@ -15,6 +16,15 @@ pub struct PostsTemplate<'a> {
     pub blog_name: &'a str,
     pub posts: Vec<Post>,
     pub page_number: i64
+}
+
+#[derive(Template)]
+#[template(path = "search.html")]
+pub struct PostsSearch<'a> {
+    pub blog_name: &'a str,
+    pub posts: Vec<Post>,
+    pub page_number: i64,
+    pub search: &'a str,
 }
 
 #[derive(Template)]
@@ -33,8 +43,16 @@ pub struct ErrorTemplate {
     pub message: Option<String>
 }
 
+#[derive(serde::Serialize, Ord, PartialOrd, Eq, PartialEq)]
+pub struct Tag<'a> {
+    pub count: i32,
+    pub tag: &'a str,
+}
+
 #[derive(Template)]
 #[template(path = "tags.html")]
-pub struct TagsTemplate {
+pub struct TagsTemplate<'a> {
     pub tags_json: String,
+    pub blog_name: &'a str,
+    pub tags: Vec<Tag<'a>>
 }
