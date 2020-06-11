@@ -1,8 +1,11 @@
-use tide::{StatusCode, Status};
 use std::io::Write;
-static KEY_REGEX : &str = r#"Primary key fingerprint: (.+)|Good signature from (".+" \[ultimate\])"#;
+
+use tide::{Status, StatusCode};
+
+static KEY_REGEX: &str = r#"Primary key fingerprint: (.+)|Good signature from (".+" \[ultimate\])"#;
+
 async fn simdjson_body<T, State>(req: &mut tide::Request<State>) -> tide::Result<T>
-    where for<'a> T : serde::de::Deserialize<'a> {
+    where for<'a> T: serde::de::Deserialize<'a> {
     let mut res = req.body_bytes()
         .await?;
     Ok(simd_json::from_slice(res.as_mut_slice()).status(StatusCode::UnprocessableEntity)?)
@@ -28,7 +31,7 @@ pub(crate) fn gpg_decrypt(content: &str) -> anyhow::Result<(String, String)> {
             Some(e) => Some(e),
             None => x.get(1)
         })
-        .map(|x|(real_content, x.as_str().to_string()))
+        .map(|x| (real_content, x.as_str().to_string()))
         .ok_or(anyhow::anyhow!("wrong format!"))
 }
 

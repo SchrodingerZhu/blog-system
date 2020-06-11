@@ -5,38 +5,31 @@
 #[macro_use]
 extern crate diesel;
 
-use ammonia::clean;
-use diesel::{PgConnection, RunQueryDsl};
-use diesel::r2d2::{ConnectionManager, Pool};
-use postgres::NoTls;
-use pulldown_cmark::{html::push_html, Options, Parser};
-use serde::*;
-use snmalloc_rs::SnMalloc;
-use tide::{new, Request, Status, StatusCode, Response, Endpoint};
-
-use crate::model::NewPost;
-use crate::template::PostTemplate;
 use std::path::Path;
-use serde::export::PhantomData;
-use async_std::prelude::Future;
+
+use diesel::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
+use snmalloc_rs::SnMalloc;
+
 use crate::server::*;
 
 mod template;
 mod utils;
 mod crypto;
 mod server;
-mod database;
 mod model;
 mod schema;
+
 type ConnPool = Pool<ConnectionManager<PgConnection>>;
 type Conn = diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>;
+
 #[global_allocator]
 static ALLOC: SnMalloc = SnMalloc;
 
 #[derive(Clone)]
 pub struct ServerState {
     pool: ConnPool,
-    blog_name: String
+    blog_name: String,
 }
 
 async fn start_server<A: AsRef<str>,
@@ -45,7 +38,7 @@ async fn start_server<A: AsRef<str>,
     pool: ConnPool) -> anyhow::Result<()> {
     let mut http_server = tide::with_state(ServerState {
         pool,
-        blog_name: "test blog".to_string()
+        blog_name: "test blog".to_string(),
     });
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
     http_server.at("/posts").strip_prefix().get(serve_posts);
@@ -70,7 +63,6 @@ async fn start_server<A: AsRef<str>,
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
-    use schema::posts::dsl::*;
     tide::log::start();
     let manager =
         diesel::r2d2::ConnectionManager::<diesel::pg::PgConnection>

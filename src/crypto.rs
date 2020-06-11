@@ -3,7 +3,7 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use radix64::STD as base64;
 use tide::{Status, StatusCode};
-use xactor::{Context, Message};
+use xactor::Context;
 
 use crate::server::JsonRequest;
 
@@ -37,7 +37,7 @@ impl xactor::Actor for StampKeeper {
 
 #[async_trait::async_trait]
 impl xactor::Handler<CleanUp> for StampKeeper {
-    async fn handle(&mut self, ctx: &Context<Self>, msg: CleanUp) {
+    async fn handle(&mut self, _ctx: &Context<Self>, msg: CleanUp) {
         while !self.stamps.is_empty()
             && UNIX_EPOCH.add(Duration::from_secs(self.stamps.first().unwrap().time_stamp))
             .elapsed().unwrap().as_secs() > TIME_OUT {
@@ -48,7 +48,7 @@ impl xactor::Handler<CleanUp> for StampKeeper {
 
 #[async_trait::async_trait]
 impl xactor::Handler<PutStamp> for StampKeeper {
-    async fn handle(&mut self, ctx: &Context<Self>, msg: PutStamp) -> bool {
+    async fn handle(&mut self, _ctx: &Context<Self>, msg: PutStamp) -> bool {
         if self.stamps.contains(&msg.0) {
             false
         } else {
@@ -170,6 +170,7 @@ mod test {
 
     use crate::crypto::Packet;
     use crate::server::JsonRequest;
+
     extern crate test;
 
     #[async_std::test]
@@ -204,6 +205,5 @@ mod test {
         println!("{:?}", message.to_json_request::<crate::server::JsonRequest>(&privk, &pubk,
                                                                                Some(&mut actor)).await.is_err());
     }
-
 }
 

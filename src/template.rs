@@ -1,7 +1,5 @@
 use askama::*;
-use chrono::Utc;
 use crate::model::{Post, Comment, Page};
-use serde::export::Formatter;
 
 #[derive(Template)]
 #[template(path = "post.html")]

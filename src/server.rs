@@ -1,18 +1,12 @@
-use std::io::Write;
-use std::pin::Pin;
-
 use askama::Template;
-use async_std::prelude::Future;
 use diesel::prelude::*;
-use tide::{Request, Response, Status, StatusCode, Redirect};
+use tide::{Redirect, Request, Response, Status, StatusCode};
 
-use crate::{ConnPool, ServerState};
-use crate::model::{Comment, NewComment, Post, POST_COLUMNS, Page};
+use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
+use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
-
-pub(crate) type BoxFuture<'a, T> = Pin<Box<dyn Future<Output=T> + Send + 'a>>;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(tag = "request_type", content = "request_body")]
@@ -80,7 +74,6 @@ pub async fn error_handle(result: tide::Result<Response>) -> tide::Result<tide::
 
 pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl as p;
-    use crate::schema::comments::dsl as c;
     let path = request.url().path().trim_start_matches("/");
     if path.contains('/') || !path.ends_with(".html") {
         return Ok(Response::new(StatusCode::NotFound));
@@ -104,7 +97,6 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
 
 pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::pages::dsl as p;
-    use crate::schema::comments::dsl as c;
     let path = request.url().path().trim_start_matches("/");
     if path.contains('/') || !path.ends_with(".html") {
         return Ok(Response::new(StatusCode::NotFound));
@@ -115,9 +107,9 @@ pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response>
     let page = p::pages
         .filter(p::title.eq(name))
         .first::<Page>(&conn)?;
-    let template = crate::template::PageTemplate{
+    let template = crate::template::PageTemplate {
         blog_name: request.state().blog_name.as_str(),
-        page: &page
+        page: &page,
     };
     let page = template.render()?;
     Ok(normal_page(page))
@@ -151,7 +143,7 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
         }
     }
     let (real_content, finger_print) = crate::utils::gpg_decrypt(form.comment_content.as_str())
-        .map_err(|x| tide::Error::from_str(StatusCode::BadRequest, "verification error"))?;
+        .map_err(|_| tide::Error::from_str(StatusCode::BadRequest, "verification error"))?;
 
     let hash = easy_hasher::easy_hasher::sha3_512(&form.comment_content)
         .to_vec();
@@ -167,7 +159,7 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
     diesel::insert_into(c::comments)
         .values(&comment)
         .execute(&conn)?;
-    let title : String = p::posts.select(p::title).filter(p::id.eq(form.post_id))
+    let title: String = p::posts.select(p::title).filter(p::id.eq(form.post_id))
         .first(&conn)?;
     Ok(Redirect::new(format!("/post/{}.html", title)).into())
 }
@@ -343,7 +335,6 @@ struct RemoveCommentForm {
 }
 
 pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::Result<Response> {
-
     use crate::schema::comments::dsl::*;
     use crate::schema::posts::dsl as p;
     let body: RemoveCommentForm = request.body_form().await?;
@@ -357,14 +348,14 @@ pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::R
     }
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
-    let (cfp, cpost_id) : (String, i32) = comments
+    let (cfp, cpost_id): (String, i32) = comments
         .select((finger_print, post_id))
         .filter(id.eq(remove.id)).first(&conn)?;
     if cfp != fp {
         Err(tide::Error::from_str(StatusCode::Unauthorized, "fingerprint does not match"))
     } else {
         diesel::delete(comments.filter(id.eq(remove.id))).execute(&conn)?;
-        let ctitle : String = p::posts.select(p::title).filter(p::id.eq(cpost_id))
+        let ctitle: String = p::posts.select(p::title).filter(p::id.eq(cpost_id))
             .first(&conn)?;
         Ok(Redirect::new(format!("/post/{}.html", ctitle)).into())
     }
@@ -381,7 +372,7 @@ pub async fn index(request: Request<ServerState>) -> tide::Result<Response> {
     let index = crate::template::IndexTemplate {
         blog_name: request.state().blog_name.as_str(),
         pages: &all_pages,
-        important_pages: &important_pages
+        important_pages: &important_pages,
     };
     Ok(
         normal_page(index.render()?)

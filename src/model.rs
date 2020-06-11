@@ -1,9 +1,7 @@
-use chrono::Utc;
-use crate::schema::{posts, comments, pages};
-use diesel::Queryable;
+use http_types::{Status, StatusCode};
+
 use crate::Conn;
-use http_types::{StatusCode, Status};
-use crate::schema::pages::columns::content;
+use crate::schema::{comments, pages, posts};
 
 #[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug)]
 pub struct Post {
@@ -11,7 +9,7 @@ pub struct Post {
     pub title: String,
     pub date: chrono::NaiveDateTime,
     pub tags: Vec<String>,
-    pub content: String
+    pub content: String,
 }
 
 impl Post {
@@ -28,12 +26,12 @@ impl Post {
 }
 
 #[derive(Insertable, Debug, Clone, diesel::AsChangeset)]
-#[table_name="posts"]
+#[table_name = "posts"]
 pub struct NewPost<'a> {
     pub title: Option<&'a str>,
     pub date: Option<&'a chrono::NaiveDateTime>,
     pub tags: Option<&'a [String]>,
-    pub content: Option<&'a str>
+    pub content: Option<&'a str>,
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable)]
@@ -50,7 +48,7 @@ impl Page {
     }
 }
 
-#[derive(diesel::Queryable, diesel::Identifiable,  diesel::Associations)]
+#[derive(diesel::Queryable, diesel::Identifiable, diesel::Associations)]
 #[belongs_to(Post)]
 pub struct Comment {
     pub id: i32,
@@ -60,11 +58,11 @@ pub struct Comment {
     pub content: String,
     pub signature: String,
     pub finger_print: String,
-    pub sha3_512: Vec<u8>
+    pub sha3_512: Vec<u8>,
 }
 
 #[derive(Insertable)]
-#[table_name="comments"]
+#[table_name = "comments"]
 pub struct NewComment<'a> {
     pub post_id: i32,
     pub nickname: &'a str,
@@ -72,7 +70,7 @@ pub struct NewComment<'a> {
     pub content: &'a str,
     pub signature: &'a str,
     pub finger_print: &'a str,
-    pub sha3_512: &'a [u8]
+    pub sha3_512: &'a [u8],
 }
 
 impl Comment {
