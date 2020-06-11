@@ -35,6 +35,10 @@ ahash = { version = "0.3", features = ["compile-time-rng", "std"] }
 dotenv = "0.15"
 easy-hasher = "2.1.1"
 hashbrown = "*"
+rpassword = "*"
+surf = "2.0.0-alpha.4"
+prettytable-rs = "0.8"
+serde_json = "*"
 diesel_full_text_search = { git = "https://github.com/SchrodingerZhu/diesel_full_text_search" }
 [general]
 # Directories to search for templates, relative to the crate root.
@@ -43,3 +47,4 @@ dirs = ["templates"]
 [profile.release]
 opt-level = 3
 lto = "fat"
+

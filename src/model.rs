@@ -2,7 +2,6 @@ use http_types::{Status, StatusCode};
 
 use crate::Conn;
 use crate::schema::{comments, pages, posts};
-use diesel::prelude::*;
 
 #[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Post {

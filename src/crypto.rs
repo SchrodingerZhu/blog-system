@@ -4,8 +4,9 @@ use std::time::{Duration, UNIX_EPOCH};
 use radix64::STD as base64;
 use tide::{Status, StatusCode};
 use xactor::Context;
-
+use anyhow::*;
 use serde::Serialize;
+use crate::KeyPair;
 
 const TIME_OUT: u64 = 30;
 
@@ -37,7 +38,7 @@ impl xactor::Actor for StampKeeper {
 
 #[async_trait::async_trait]
 impl xactor::Handler<CleanUp> for StampKeeper {
-    async fn handle(&mut self, _ctx: &Context<Self>, msg: CleanUp) {
+    async fn handle(&mut self, _ctx: &Context<Self>, _msg: CleanUp) {
         while !self.stamps.is_empty()
             && UNIX_EPOCH.add(Duration::from_secs(self.stamps.first().unwrap().time_stamp))
             .elapsed().unwrap().as_secs() > TIME_OUT {
@@ -71,62 +72,59 @@ pub struct Packet {
 impl Packet {
     pub async fn to_json_request<T: serde::de::DeserializeOwned>(
         &self,
-        privkey: &botan::Privkey,
-        pubkey: &botan::Pubkey,
+        key_pair: &KeyPair,
         mut stamp_keeper: Option<&mut xactor::Addr<StampKeeper>>,
-    ) -> tide::Result<T> {
-        let time_stamp: u64 = self.time_stamp.parse()
-            .status(StatusCode::RequestTimeout)?;
+    ) -> anyhow::Result<T> {
+        let time_stamp: u64 = self.time_stamp.parse()?;
         if UNIX_EPOCH.add(Duration::from_secs(time_stamp)).elapsed().status(StatusCode::RequestTimeout)
+            .map_err(|x| anyhow!("{}", x))
             .map(|x| x.as_secs() > TIME_OUT)? {
-            return Err(tide::Error::from_str(StatusCode::RequestTimeout, "Time Limit Exceeded"));
+            return Err(anyhow!("Time Limit Exceeded"));
         }
         if stamp_keeper.is_some() {
             let addr = stamp_keeper.as_mut().unwrap();
             match addr.call(PutStamp(Stamp { time_stamp, nonce: self.nonce.clone() })).await {
                 Ok(false) | Err(_) => {
-                    return Err(tide::Error::from_str(StatusCode::RequestTimeout, "Stamp Validation Failed"));
+                    return Err(anyhow!("Stamp Validation Failed"));
                 }
                 _ => ()
             }
         }
-        let verifier = botan::Verifier::new(pubkey, "PKCS1v15(SHA-256)")
-            .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Failed to Initialized Verifier"))?;
-        let decrypter = botan::Decryptor::new(privkey, "OAEP(SHA-512)")
-            .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Failed to Initialized Decrypter"))?;
-        let symmetric_key = base64.decode(self.symmetric_key.as_bytes())
-            .status(StatusCode::UnprocessableEntity)?;
-        let signature = base64.decode(self.signature.as_bytes())
-            .status(StatusCode::UnprocessableEntity)?;
-        let message = base64.decode(self.message_block.as_bytes())
-            .status(StatusCode::UnprocessableEntity)?;
-        let nonce = base64.decode(self.nonce.as_bytes())
-            .status(StatusCode::UnprocessableEntity)?;
+        let verifier = botan::Verifier::new(&key_pair.owner_public, "PKCS1v15(SHA-256)")
+            .map_err(|_|anyhow!("Verifier Initialization Failed"))?;
+        let decrypter = botan::Decryptor::new(&key_pair.server_private, "OAEP(SHA-512)")
+            .map_err(|_| anyhow!("Decryptor Initialization Failed"))?;
+        let symmetric_key = base64.decode(self.symmetric_key.as_bytes())?;
+        let signature = base64.decode(self.signature.as_bytes())?;
+        let message = base64.decode(self.message_block.as_bytes())?;
+        let nonce = base64.decode(self.nonce.as_bytes())?;
         let aead_key = decrypter.decrypt(symmetric_key.as_slice())
-            .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Invalid AEAD Key"))?;
+            .map_err(|_| anyhow!("Invalid AEAD Key"))?;
         verifier.update(self.time_stamp.as_bytes())
             .and_then(|_| verifier.update(aead_key.as_ref()))
             .and_then(|_| verifier.update(message.as_ref()))
             .and_then(|_| verifier.update(nonce.as_ref()))
-            .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Unable to Update Verifier"))?;
+            .map_err(|_| anyhow!("Verifier Update Error"))?;
         if let Ok(true) = verifier.finish(signature.as_slice()) {
             let aead = botan::Cipher::new("AES-256/GCM", botan::CipherDirection::Decrypt)
-                .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Failed to Initialize Aead"))?;
+                .map_err(|_| anyhow!("AEAD Initialization Error"))?;
             aead.set_key(aead_key.as_slice())
-                .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Invalid AEAD Key"))?;
+                .map_err(|_| anyhow!("Invalid AEAD Key"))?;
             aead.process(nonce.as_slice(), message.as_slice())
-                .map_err(|_| tide::Error::from_str(StatusCode::Unauthorized, "Unable to process AEAD Message"))
+                .map_err(|_|anyhow!("AEAD Process Error"))
                 .and_then(|mut x| simd_json::from_slice(x.as_mut_slice())
-                    .status(StatusCode::UnprocessableEntity))
+                    .map_err(Into::into))
         } else {
-            Err(tide::Error::from_str(StatusCode::Unauthorized, "Signature Verification Error"))
+            Err(anyhow!("Signature Verification Error"))
         }
     }
 
     #[allow(unused)]
-    pub async fn from_json_request<T : Serialize>(res: T, privkey: &botan::Privkey, pubkey: &botan::Pubkey) -> anyhow::Result<Self> {
+    pub async fn from_json_request<T : Serialize>(res: T, key_pair: &KeyPair) -> anyhow::Result<Self> {
         let mut aead_key = [0; 32];
         let mut nonce = [0; 12];
+        let privkey = &key_pair.server_private;
+        let pubkey = &key_pair.owner_public;
         let random = botan::RandomNumberGenerator::new_system()
             .map_err(|e| anyhow::anyhow!("{:?}", e))?;
         random.fill(&mut aead_key);
@@ -163,8 +161,8 @@ impl Packet {
     }
 
 
-    pub async fn from_json_request_tide<T : Serialize>(res: T, privkey: &botan::Privkey, pubkey: &botan::Pubkey) -> tide::Result<Packet> {
-        Self::from_json_request(res, privkey, pubkey).await
+    pub async fn from_json_request_tide<T : Serialize>(res: T, key_pair: &KeyPair) -> tide::Result<Packet> {
+        Self::from_json_request(res, key_pair).await
             .map_err(|x| {
                 tide::Error::from_str(StatusCode::InternalServerError, x)
             })

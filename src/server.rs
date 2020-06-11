@@ -2,6 +2,8 @@ use askama::Template;
 use diesel::prelude::*;
 use tide::{Redirect, Request, Response, Status, StatusCode};
 
+use crate::api::JsonRequest;
+use crate::crypto::Packet;
 use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
@@ -371,4 +373,25 @@ pub async fn index(request: Request<ServerState>) -> tide::Result<Response> {
     Ok(
         normal_page(index.render()?)
     )
+}
+
+pub async fn handle_api(mut request: Request<ServerState>) -> tide::Result<Response> {
+    let packet: Packet = crate::utils::simdjson_body(&mut request).await?;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let mut addr = request.state().stamp_keeper.clone();
+    let key_pair = &request.state().key_pair;
+    let request: JsonRequest = packet.to_json_request(key_pair,
+                                                      Some(&mut addr),
+    ).await.map_err(|_| tide::Error::from_str(StatusCode::BadRequest, "failed to decode request"))?;
+    let mut response = Response::new(StatusCode::Ok);
+    let response_content = request.handle(conn)
+        .await;
+    let response_packet = Packet::from_json_request_tide(response_content,
+                                                         key_pair,
+    ).await?;
+    let response_json = simd_json::to_string(&response_packet)?;
+    response.set_content_type(http_types::mime::JSON);
+    response.set_body(response_json);
+    Ok(response)
 }
