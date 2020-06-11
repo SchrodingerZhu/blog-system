@@ -81,7 +81,8 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let post: Post = p::posts
         .select(POST_COLUMNS)
         .filter(p::title.eq(name))
-        .first::<Post>(&conn)?;
+        .first::<Post>(&conn)
+        .status(StatusCode::NotFound)?;
     let all_comments = Comment::belonging_to(&post)
         .load::<Comment>(&conn)?;
     let template = crate::template::PostTemplate {
@@ -104,7 +105,8 @@ pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response>
     let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
     let page = p::pages
         .filter(p::title.eq(name))
-        .first::<Page>(&conn)?;
+        .first::<Page>(&conn)
+        .status(StatusCode::NotFound)?;
     let template = crate::template::PageTemplate {
         blog_name: request.state().blog_name.as_str(),
         page: &page,
@@ -158,7 +160,8 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
         .values(&comment)
         .execute(&conn)?;
     let title: String = p::posts.select(p::title).filter(p::id.eq(form.post_id))
-        .first(&conn)?;
+        .first(&conn)
+        .status(StatusCode::NotFound)?;
     Ok(Redirect::new(format!("/post/{}.html", title)).into())
 }
 
@@ -204,7 +207,7 @@ pub async fn serve_comment_raw(request: Request<ServerState>) -> tide::Result<St
     let target: String = comments.select(signature)
         .filter(id.eq(cid))
         .first(&conn)
-        .status(StatusCode::InternalServerError)?;
+        .status(StatusCode::NotFound)?;
     Ok(target)
 }
 
@@ -217,7 +220,7 @@ pub async fn serve_post_raw(request: Request<ServerState>) -> tide::Result<Strin
     let target: String = posts.select(content)
         .filter(id.eq(cid))
         .first(&conn)
-        .status(StatusCode::InternalServerError)?;
+        .status(StatusCode::NotFound)?;
 
     Ok(target)
 }
@@ -231,7 +234,7 @@ pub async fn serve_page_raw(request: Request<ServerState>) -> tide::Result<Strin
     let target: String = pages.select(content)
         .filter(id.eq(cid))
         .first(&conn)
-        .status(StatusCode::InternalServerError)?;
+        .status(StatusCode::NotFound)?;
 
     Ok(target)
 }
