@@ -5,7 +5,7 @@ use radix64::STD as base64;
 use tide::{Status, StatusCode};
 use xactor::Context;
 
-use crate::server::JsonRequest;
+use serde::Serialize;
 
 const TIME_OUT: u64 = 30;
 
@@ -124,7 +124,7 @@ impl Packet {
     }
 
     #[allow(unused)]
-    pub fn from_json_request(res: JsonRequest, privkey: &botan::Privkey, pubkey: &botan::Pubkey) -> anyhow::Result<Self> {
+    pub async fn from_json_request<T : Serialize>(res: T, privkey: &botan::Privkey, pubkey: &botan::Pubkey) -> anyhow::Result<Self> {
         let mut aead_key = [0; 32];
         let mut nonce = [0; 12];
         let random = botan::RandomNumberGenerator::new_system()
@@ -161,6 +161,15 @@ impl Packet {
             time_stamp,
         })
     }
+
+
+    pub async fn from_json_request_tide<T : Serialize>(res: T, privkey: &botan::Privkey, pubkey: &botan::Pubkey) -> tide::Result<Packet> {
+        Self::from_json_request(res, privkey, pubkey).await
+            .map_err(|x| {
+                tide::Error::from_str(StatusCode::InternalServerError, x)
+            })
+    }
+
 }
 
 #[cfg(test)]

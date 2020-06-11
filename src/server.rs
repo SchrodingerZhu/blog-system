@@ -8,12 +8,6 @@ use crate::template::{PostsTemplate, Tag, TagTemplate};
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(tag = "request_type", content = "request_body")]
-pub enum JsonRequest {
-    ListPosts
-}
-
 pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Response> {
     use crate::schema::posts::dsl::*;
     let conn = request
@@ -143,7 +137,7 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
         }
     }
     let (real_content, finger_print) = crate::utils::gpg_decrypt(form.comment_content.as_str())
-        .map_err(|_| tide::Error::from_str(StatusCode::BadRequest, "verification error"))?;
+        .map_err(|e| tide::Error::from_str(StatusCode::BadRequest, e))?;
 
     let hash = easy_hasher::easy_hasher::sha3_512(&form.comment_content)
         .to_vec();
@@ -280,7 +274,7 @@ pub async fn handle_search(mut request: Request<ServerState>) -> tide::Result<Re
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let all_posts = crate::model::Post::list(&conn,
                                              form.search.as_str(),
-                                             form.page_number)?;
+                                             Some(form.page_number))?;
     let template = crate::template::PostsSearch {
         blog_name: request.state().blog_name.as_str(),
         posts: all_posts,

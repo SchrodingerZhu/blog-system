@@ -12,6 +12,9 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use snmalloc_rs::SnMalloc;
 
 use crate::server::*;
+use xactor::Addr;
+use crate::crypto::StampKeeper;
+use async_std::sync::Arc;
 
 mod template;
 mod utils;
@@ -19,6 +22,7 @@ mod crypto;
 mod server;
 mod model;
 mod schema;
+mod api;
 
 type ConnPool = Pool<ConnectionManager<PgConnection>>;
 type Conn = diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>;
@@ -30,15 +34,30 @@ static ALLOC: SnMalloc = SnMalloc;
 pub struct ServerState {
     pool: ConnPool,
     blog_name: String,
+    stamp_keeper: Addr<StampKeeper>,
+    server_private: Arc<botan::Privkey>,
+    owner_public: Arc<botan::Pubkey>
 }
+
+unsafe impl Send for ServerState {}
+unsafe impl Sync for ServerState {}
 
 async fn start_server<A: AsRef<str>,
     B: AsRef<Path>>(
-    address: A, port: u16, web_root: B,
-    pool: ConnPool) -> anyhow::Result<()> {
+        address: A,
+        port: u16,
+        web_root: B,
+        pool: ConnPool,
+        stamp_keeper: Addr<StampKeeper>,
+        server_private: botan::Privkey,
+        owner_public: botan::Pubkey
+    ) -> anyhow::Result<()> {
     let mut http_server = tide::with_state(ServerState {
         pool,
         blog_name: "test blog".to_string(),
+        stamp_keeper,
+        server_private: Arc::new(server_private),
+        owner_public: Arc::new(owner_public)
     });
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
     http_server.at("/posts").strip_prefix().get(serve_posts);
@@ -68,6 +87,6 @@ async fn main() -> anyhow::Result<()> {
         diesel::r2d2::ConnectionManager::<diesel::pg::PgConnection>
         ::new("postgres://schrodinger@localhost/testdb");
     let pool = diesel::r2d2::Pool::new(manager)?;
-    start_server("0.0.0.0", 8080, ".", pool).await?;
+    //start_server("0.0.0.0", 8080, ".", pool).await?;
     Ok(())
 }

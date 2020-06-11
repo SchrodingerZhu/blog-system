@@ -2,8 +2,9 @@ use http_types::{Status, StatusCode};
 
 use crate::Conn;
 use crate::schema::{comments, pages, posts};
+use diesel::prelude::*;
 
-#[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug)]
+#[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Post {
     pub id: i32,
     pub title: String,
@@ -34,7 +35,15 @@ pub struct NewPost<'a> {
     pub content: Option<&'a str>,
 }
 
-#[derive(diesel::Queryable, diesel::Identifiable)]
+#[derive(Insertable, Debug, Clone, diesel::AsChangeset)]
+#[table_name = "pages"]
+pub struct NewPage<'a> {
+    pub title: Option<&'a str>,
+    pub content: Option<&'a str>,
+    pub important: Option<bool>
+}
+
+#[derive(diesel::Queryable, diesel::Identifiable, serde::Serialize, Debug,  serde::Deserialize)]
 pub struct Page {
     pub id: i32,
     pub title: String,
@@ -48,7 +57,7 @@ impl Page {
     }
 }
 
-#[derive(diesel::Queryable, diesel::Identifiable, diesel::Associations)]
+#[derive(diesel::Queryable, diesel::Identifiable, diesel::Associations, serde::Serialize, Debug, serde::Deserialize)]
 #[belongs_to(Post)]
 pub struct Comment {
     pub id: i32,
@@ -109,7 +118,7 @@ pub const POST_COLUMNS: PostColumns = (
 );
 
 impl Post {
-    pub fn list(connection: &Conn, search: &str, page_number: i64) -> tide::Result<Vec<Self>> {
+    pub fn list(connection: &Conn, search: &str, page_number: Option<i64>) -> tide::Result<Vec<Self>> {
         use diesel::RunQueryDsl;
         use diesel::QueryDsl;
         use diesel::pg::Pg;
@@ -123,12 +132,19 @@ impl Post {
             query = query
                 .filter(text_searchable.matches(plainto_tsquery(search)));
         }
-        query
-            .select(POST_COLUMNS)
-            .limit(20)
-            .offset(page_number * 20)
-            .load::<Post>(connection)
-            .status(StatusCode::InternalServerError)
+        if let Some(page_number) = page_number {
+            query
+                .select(POST_COLUMNS)
+                .limit(20)
+                .offset(page_number * 20)
+                .load::<Post>(connection)
+                .status(StatusCode::InternalServerError)
+        } else {
+            query
+                .select(POST_COLUMNS)
+                .load::<Post>(connection)
+                .status(StatusCode::InternalServerError)
+        }
     }
 }
 
