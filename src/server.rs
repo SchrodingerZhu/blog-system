@@ -77,6 +77,7 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let name = path.trim_end_matches(".html");
+    let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
     let post: Post = p::posts
         .select(POST_COLUMNS)
         .filter(p::title.eq(name))
@@ -100,6 +101,7 @@ pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let name = path.trim_end_matches(".html");
+    let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
     let page = p::pages
         .filter(p::title.eq(name))
         .first::<Page>(&conn)?;

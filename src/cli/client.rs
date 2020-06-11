@@ -116,8 +116,8 @@ impl FromStr for TagList {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut list: Vec<String> = s.split(",")
+            .map(|x| x.trim().to_string())
             .filter(|x| !x.is_empty())
-            .map(|x| x.to_string())
             .collect();
         list.sort();
         list.dedup_by(|x, y| x == y);

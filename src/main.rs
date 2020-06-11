@@ -146,6 +146,7 @@ async fn main() -> anyhow::Result<()> {
             public_key,
             command
         } => {
+            pretty_env_logger::try_init_timed_custom_env("BLOG_CLIENT_LOG")?;
             let request = command.into_json_request()?;
             let private_key_file =
                 std::fs::read_to_string(private_key.as_path())?;

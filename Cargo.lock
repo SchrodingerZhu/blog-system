@@ -2900,6 +2900,7 @@ dependencies = [
  "hashbrown",
  "http-types",
  "log",
+ "percent-encoding",
  "postgres",
  "pretty_env_logger",
  "prettytable-rs",
