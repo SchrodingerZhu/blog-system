@@ -30,13 +30,13 @@ type Conn = diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 #[global_allocator]
 static ALLOC: SnMalloc = SnMalloc;
 
-#[derive(Clone)]
+
 pub struct ServerState {
     pool: ConnPool,
     blog_name: String,
     stamp_keeper: Addr<StampKeeper>,
-    server_private: Arc<botan::Privkey>,
-    owner_public: Arc<botan::Pubkey>
+    server_private: botan::Privkey,
+    owner_public: botan::Pubkey
 }
 
 unsafe impl Send for ServerState {}
@@ -56,8 +56,8 @@ async fn start_server<A: AsRef<str>,
         pool,
         blog_name: "test blog".to_string(),
         stamp_keeper,
-        server_private: Arc::new(server_private),
-        owner_public: Arc::new(owner_public)
+        server_private,
+        owner_public
     });
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
     http_server.at("/posts").strip_prefix().get(serve_posts);
