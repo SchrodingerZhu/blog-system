@@ -205,7 +205,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
     )
 }
 
-pub async fn serve_comment_signature(request: Request<ServerState>) -> tide::Result<String> {
+pub async fn serve_comment_raw(request: Request<ServerState>) -> tide::Result<String> {
     use crate::schema::comments::dsl::*;
     let cid: i32 = request.url().path().trim_start_matches("/").parse()
         .status(StatusCode::BadRequest)?;
@@ -218,13 +218,13 @@ pub async fn serve_comment_signature(request: Request<ServerState>) -> tide::Res
     Ok(target)
 }
 
-pub async fn serve_post_signature(request: Request<ServerState>) -> tide::Result<String> {
+pub async fn serve_post_raw(request: Request<ServerState>) -> tide::Result<String> {
     use crate::schema::posts::dsl::*;
     let cid: i32 = request.url().path().trim_start_matches("/").parse()
         .status(StatusCode::BadRequest)?;
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
-    let target: String = posts.select(signature)
+    let target: String = posts.select(content)
         .filter(id.eq(cid))
         .first(&conn)
         .status(StatusCode::InternalServerError)?;
@@ -232,6 +232,19 @@ pub async fn serve_post_signature(request: Request<ServerState>) -> tide::Result
     Ok(target)
 }
 
+pub async fn serve_page_raw(request: Request<ServerState>) -> tide::Result<String> {
+    use crate::schema::pages::dsl::*;
+    let cid: i32 = request.url().path().trim_start_matches("/").parse()
+        .status(StatusCode::BadRequest)?;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let target: String = pages.select(content)
+        .filter(id.eq(cid))
+        .first(&conn)
+        .status(StatusCode::InternalServerError)?;
+
+    Ok(target)
+}
 
 pub async fn serve_tags(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl::*;
@@ -357,3 +370,20 @@ pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::R
     }
 }
 
+pub async fn index(request: Request<ServerState>) -> tide::Result<Response> {
+    use crate::schema::pages::dsl::*;
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let all_pages = pages.load::<Page>(&conn)?;
+    let important_pages = pages.select((title, id))
+        .filter(important)
+        .load(&conn)?;
+    let index = crate::template::IndexTemplate {
+        blog_name: request.state().blog_name.as_str(),
+        pages: &all_pages,
+        important_pages: &important_pages
+    };
+    Ok(
+        normal_page(index.render()?)
+    )
+}

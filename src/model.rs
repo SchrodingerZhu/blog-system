@@ -3,14 +3,15 @@ use crate::schema::{posts, comments, pages};
 use diesel::Queryable;
 use crate::Conn;
 use http_types::{StatusCode, Status};
+use crate::schema::pages::columns::content;
+
 #[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug)]
 pub struct Post {
     pub id: i32,
     pub title: String,
     pub date: chrono::NaiveDateTime,
     pub tags: Vec<String>,
-    pub content: String,
-    pub signature: String
+    pub content: String
 }
 
 impl Post {
@@ -32,8 +33,7 @@ pub struct NewPost<'a> {
     pub title: Option<&'a str>,
     pub date: Option<&'a chrono::NaiveDateTime>,
     pub tags: Option<&'a [String]>,
-    pub content: Option<&'a str>,
-    pub signature: Option<&'a str>
+    pub content: Option<&'a str>
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable)]
@@ -41,6 +41,13 @@ pub struct Page {
     pub id: i32,
     pub title: String,
     pub content: String,
+    pub important: bool,
+}
+
+impl Page {
+    pub fn render_abstract(&self) -> String {
+        self.content.chars().take(128).collect()
+    }
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable,  diesel::Associations)]
@@ -91,8 +98,7 @@ pub type PostColumns = (
     crate::schema::posts::title,
     crate::schema::posts::date,
     crate::schema::posts::tags,
-    crate::schema::posts::content,
-    crate::schema::posts::signature,
+    crate::schema::posts::content
 );
 
 
@@ -101,8 +107,7 @@ pub const POST_COLUMNS: PostColumns = (
     crate::schema::posts::title,
     crate::schema::posts::date,
     crate::schema::posts::tags,
-    crate::schema::posts::content,
-    crate::schema::posts::signature,
+    crate::schema::posts::content
 );
 
 impl Post {
@@ -129,3 +134,4 @@ impl Post {
     }
 }
 
+diesel::joinable!(comments -> posts (post_id));

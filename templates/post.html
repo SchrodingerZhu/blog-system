@@ -34,7 +34,7 @@
 <div class="text-content shadow-lg p-3 mb-5 bg-light rounded">
     {# The following part is the markdown rendered result #}
     {{ post.render_content()|safe }}
-    <a href="/signature/post/{{post.id}}" class="btn btn-primary"> Raw Content </a>
+    <a href="/raw/post/{{post.id}}" class="btn btn-primary"> Raw Content </a>
 </div>
 <div class="tag-area" data-toggle="buttons">
     <h2>Tags</h2>
@@ -79,7 +79,7 @@
                     <p>FingerPrint: {{comment.finger_print}}</p>
                 </div>
                 <div class="overflow-auto tab-pane fade" id="list-control{{comment.id}}" role="tabpanel" aria-labelledby="list-control-list{{comment.id}}">
-                    <a href="/signature/comment/{{comment.id}}" class="btn btn-primary">Raw Content</a>
+                    <a href="/raw/comment/{{comment.id}}" class="btn btn-primary">Raw Content</a>
                     <a href="/comment/remove/{{comment.id}}" class="btn btn-primary">Delete Content</a>
                 </div>
             </div>

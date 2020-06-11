@@ -70,3 +70,11 @@ pub struct PageTemplate<'a> {
     pub blog_name: &'a str,
     pub page: &'a Page,
 }
+
+#[derive(Template)]
+#[template(path = "index.html")]
+pub struct IndexTemplate<'a> {
+    pub blog_name: &'a str,
+    pub pages: &'a [Page],
+    pub important_pages: &'a [(String, i32)]
+}

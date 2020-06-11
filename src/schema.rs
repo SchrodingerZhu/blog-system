@@ -16,6 +16,7 @@ diesel::table! {
         id -> Int4,
         title -> Varchar,
         content -> Text,
+        important -> Bool,
     }
 }
 
@@ -26,7 +27,6 @@ diesel::table! {
         date -> Timestamp,
         tags -> Array<Text>,
         content -> Text,
-        signature -> Text,
         text_searchable -> diesel_full_text_search::TsVector,
     }
 }
@@ -36,5 +36,3 @@ diesel::allow_tables_to_appear_in_same_query!(
     pages,
     posts,
 );
-
-diesel::joinable!(comments -> posts (post_id));
