@@ -135,7 +135,7 @@ async fn main() -> anyhow::Result<()> {
                     .map_err(|x| anyhow!("{:?}", x))?;
             let stamp_keeper =
                 StampKeeper::start_default().
-                    await;
+                    await?;
             start_server(listen_address,
                          port,
                          web_root,
