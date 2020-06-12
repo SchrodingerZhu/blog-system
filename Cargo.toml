@@ -41,6 +41,7 @@ surf = "2.0.0-alpha.4"
 prettytable-rs = "0.8"
 serde_json = "*"
 percent-encoding ="2"
+atom_syndication = { version  = "0.9", features = ["with-serde"] }
 diesel_full_text_search = { git = "https://github.com/SchrodingerZhu/diesel_full_text_search" }
 
 [profile.release]

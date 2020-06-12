@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use askama::Template;
 use diesel::prelude::*;
 use tide::{Redirect, Request, Response, Status, StatusCode};
@@ -7,7 +9,7 @@ use crate::crypto::Packet;
 use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
-use std::str::FromStr;
+use chrono::FixedOffset;
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
@@ -406,21 +408,26 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     use crate::schema::posts::dsl::*;
-    let all_posts : Vec<Post> = posts
+    let all_posts: Vec<Post> = posts
         .select(POST_COLUMNS)
         .load::<Post>(&conn)
         .status(StatusCode::InternalServerError)?;
-    let items : Vec<rss::Item> = all_posts.into_iter()
+    let items: Vec<rss::Item> = all_posts.into_iter()
         .map(|x| rss::ItemBuilder::default()
             .title(Some(x.title.clone()))
             .link(Some(format!("{}/post/{}.html", request.state().domain,
-                x.title)))
+                               x.title)))
             .pub_date(Some(x.date.to_string()))
-            .description(Some(x.get_abstract()))
+            .content(Some({
+                let parser = pulldown_cmark::Parser::new(x.content.as_str());
+                let mut rendered = String::with_capacity(512);
+                pulldown_cmark::html::push_html(&mut rendered, parser);
+                rendered
+            }))
             .build())
-        .filter_map(|x|x.ok())
+        .filter_map(|x| x.ok())
         .collect();
-    let channel : rss::Channel = rss::ChannelBuilder::default()
+    let channel: rss::Channel = rss::ChannelBuilder::default()
         .title(request.state().blog_name.as_str())
         .link(request.state().domain.as_str())
         .description("blog")
@@ -428,6 +435,63 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
         .build()
         .map_err(|_| tide::Error::from_str(StatusCode::Ok, "RSS build failed"))?;
     let mime = http_types::mime::Mime::from_str("application/rss+xml")?;
+    let mut response = Response::new(StatusCode::Ok);
+    response.set_content_type(mime);
+    response.set_body(channel.to_string());
+    Ok(
+        response
+    )
+}
+
+
+pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response> {
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    use crate::schema::posts::dsl::*;
+    let all_posts: Vec<Post> = posts
+        .select(POST_COLUMNS)
+        .load::<Post>(&conn)
+        .status(StatusCode::InternalServerError)?;
+    let entries: Vec<atom_syndication::Entry> = all_posts.into_iter()
+        .map(|x| atom_syndication::ContentBuilder::default()
+            .value(Some({
+                let parser = pulldown_cmark::Parser::new(x.content.as_str());
+                let mut rendered = String::with_capacity(512);
+                pulldown_cmark::html::push_html(&mut rendered, parser);
+                rendered
+            }))
+            .content_type(Some("text/html".to_string()))
+            .src(Some(format!("{}/raw/post/{}", request.state().domain, x.id)))
+            .build()
+            .and_then(|the_content| atom_syndication::EntryBuilder::default()
+                .title(x.title.as_str())
+                .updated({
+                    chrono::DateTime::<FixedOffset>::from_utc(x.date.clone(),
+                                               chrono::FixedOffset::east(0))
+                })
+                .links(vec![{
+                    let mut link = atom_syndication::Link::default();
+                    link.set_href(format!("{}/post/{}.html", request.state().domain, x.title));
+                    link.set_title(x.title.clone());
+                    link
+                }])
+                .content(the_content)
+                .build()))
+        .filter_map(|x| x.ok())
+        .collect();
+    let channel: atom_syndication::Feed = atom_syndication::FeedBuilder::default()
+        .title(request.state().blog_name.as_str())
+        .links(vec![{
+            let mut link = atom_syndication::Link::default();
+            link.set_href(request.state().domain.clone());
+            link.set_title(request.state().blog_name.clone());
+            link
+        }])
+        .entries(entries)
+        .icon(Some(format!("{}/static/img/ico.png", request.state().domain)))
+        .build()
+        .map_err(|_| tide::Error::from_str(StatusCode::Ok, "ATOM build failed"))?;
+    let mime = http_types::mime::Mime::from_str("application/atom+xml")?;
     let mut response = Response::new(StatusCode::Ok);
     response.set_content_type(mime);
     response.set_body(channel.to_string());
