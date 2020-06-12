@@ -43,7 +43,7 @@
     <script src="/static/js/vanta.min.js"></script>
 </head>
 <body>
-<div class="container-fluid px-0 fill bg-dark">
+<div class="container-fluid px-0 fill bg-dark" id="box">
     <div class="webGLBackground fill" id="webGLBackground">
         <div class="padding-box fill">
             <h1 class="text-white title-text text-lg"> Welcome to {{blog_name}} </h1>
@@ -118,13 +118,25 @@
     </div>
 </div>
 <script>
-    VANTA.RINGS({
-        el: "#webGLBackground",
-        mouseControls: true,
-        touchControls: true,
-        scale: 1.00,
-        scaleMobile: 1.00
-    });
+    let test = document.createElement("canvas");
+    let gl   = test.getContext("webgl")
+        || test.getContext("experimental-webgl");
+    let support = gl && gl instanceof WebGLRenderingContext;
+    if( support && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+        VANTA.RINGS({
+            el: "#webGLBackground",
+            mouseControls: true,
+            touchControls: true,
+            scale: 1.00,
+            scaleMobile: 1.00
+        });
+    } else {
+        let box = document.getElementById("box");
+        box.style.backgroundImage = 'url("/static/img/bg.jpg")';
+        box.style.backgroundRepeat = 'no-repeat';
+        box.style.backgroundSize = 'cover';
+        box.classList.add("img-fluid");
+    }
     currentTime();
 </script>
 <script
