@@ -22,7 +22,9 @@ pub enum Command {
         #[structopt(short, long, help="name of the blog", env="BLOG_NAME", default_value="Rusty Blog")]
         blog_name: String,
         #[structopt(short, long, help="root of the web server", env="BLOG_WEB_ROOT", default_value=".")]
-        web_root: PathBuf
+        web_root: PathBuf,
+        #[structopt(short="u", long, help="server domain", env="BLOG_SERVER_DOMAIN")]
+        domain: String
     },
     #[structopt(name="client", about="Use as a client")]
     Client {

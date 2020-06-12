@@ -7,6 +7,7 @@ use crate::crypto::Packet;
 use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
+use std::str::FromStr;
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
@@ -399,4 +400,38 @@ pub async fn handle_api(mut request: Request<ServerState>) -> tide::Result<Respo
     response.set_content_type(http_types::mime::JSON);
     response.set_body(response_json);
     Ok(response)
+}
+
+pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response> {
+    let conn = request
+        .state().pool.get().status(StatusCode::InternalServerError)?;
+    use crate::schema::posts::dsl::*;
+    let all_posts : Vec<Post> = posts
+        .select(POST_COLUMNS)
+        .load::<Post>(&conn)
+        .status(StatusCode::InternalServerError)?;
+    let items : Vec<rss::Item> = all_posts.into_iter()
+        .map(|x| rss::ItemBuilder::default()
+            .title(Some(x.title.clone()))
+            .link(Some(format!("{}/post/{}.html", request.state().domain,
+                x.title)))
+            .pub_date(Some(x.date.to_string()))
+            .description(Some(x.get_abstract()))
+            .build())
+        .filter_map(|x|x.ok())
+        .collect();
+    let channel : rss::Channel = rss::ChannelBuilder::default()
+        .title(request.state().blog_name.as_str())
+        .link(request.state().domain.as_str())
+        .description("blog")
+        .items(items)
+        .build()
+        .map_err(|_| tide::Error::from_str(StatusCode::Ok, "RSS build failed"))?;
+    let mime = http_types::mime::Mime::from_str("application/rss+xml")?;
+    let mut response = Response::new(StatusCode::Ok);
+    response.set_content_type(mime);
+    response.set_body(channel.to_string());
+    Ok(
+        response
+    )
 }

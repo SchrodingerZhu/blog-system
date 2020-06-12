@@ -8,11 +8,12 @@
 {% endblock %}
 {% block body %}
 <h1> All Posts | Page {{page_number}} </h1>
+<br/>
 <!-- Button trigger modal -->
 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">
     Search Post
 </button>
-
+<br/>
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
      aria-hidden="true">
@@ -41,23 +42,27 @@
         </div>
     </div>
 </div>
+<br/>
 {% if posts.len() > 0 %}
-<ul>
+<div class="columns">
     {% for post in posts %}
-    <li>
-        <div class="post-box">
-            <h3><a href="/post/{{post.title}}.html">{{post.title}}</a></h3>
-            <p>{{post.date.to_string()}}</p>
-            <pre>
-                    <code class="language-markdown">
-                        {{post.get_abstract()}}
-                        more ...
-                    </code>
-                </pre>
+    <div class="card">
+        <div class="card-header">
+            Post #{{post.id}}
         </div>
-    </li>
+        <div class="card-body">
+            <h5 class="card-title">{{post.title}}</h5>
+            <p class="card-text"> {{post.date.to_string()}} </p>
+            <pre><code class="language-markdown">{{post.get_abstract()}}
+more ...
+            </code></pre>
+            <a href="/post/{{post.title}}.html" class="btn btn-primary">Read More</a>
+            <a href="/raw/post/{{post.id}}" class="btn btn-success">Raw Content</a>
+        </div>
+    </div>
+    <br/>
     {% endfor %}
-</ul>
+</div>
 {% else -%}
 <span> NO MORE~ </span>
 {% endif -%}

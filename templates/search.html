@@ -1,67 +1,77 @@
 {% extends "base.html" %}
 {% block title %}{{ blog_name }} | Posts{% endblock %}
 {% block head %}
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
-    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
-    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
+<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
 {% endblock %}
 {% block body %}
-    <h1> Search: {{search}} | Page {{page_number}} </h1>
+<h1> Search: {{search}} | Page {{page_number}} </h1>
+{% if posts.len() > 0 %}
+<div class="columns">
+    {% for post in posts %}
+    <div class="card">
+        <div class="card-header">
+            Post #{{post.id}}
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">{{post.title}}</h5>
+            <p class="card-text"> {{post.date.to_string()}} </p>
+            <pre><code class="language-markdown">{{post.get_abstract()}}
+more ...
+            </code></pre>
+            <a href="/post/{{post.title}}.html" class="btn btn-primary">Read More</a>
+            <a href="/raw/post/{{post.id}}" class="btn btn-success">Raw Content</a>
+        </div>
+    </div>
+    <br/>
+    {% endfor %}
+</div>
+{% else -%}
+<span> NO MORE~ </span>
+{% endif -%}
+<ul class="pagination">
+    {% if page_number > 0 %}
+    <li class="page-item">
+        <button class="page-link" onclick="prev()"> Previous Page</button>
+    </li>
+    {% endif %}
     {% if posts.len() > 0 %}
-    <ul>
-        {% for post in posts %}
-        <li>
-            <div class="post-box">
-                <h3><a href="/post/{{post.title}}.html">{{post.title}}</a></h3>
-                <p>{{post.date.to_string()}}</p>
-                <pre>
-                    <code class="language-markdown">
-                        {{post.get_abstract()}}
-                        more ...
-                    </code>
-                </pre>
-            </div>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else -%}
-    <span> NO MORE~ </span>
-    {% endif -%}
-    <ul class="pagination">
-        {% if page_number > 0 %}
-        <li class="page-item"><button class="page-link" onclick="prev()"> Previous Page </button></li>
-        {% endif %}
-        {% if posts.len() > 0 %}
-        <li class="page-item"><button class="page-link" onclick="next()"> Next Page </button></li>
-        {% endif %}
-    </ul>
+    <li class="page-item">
+        <button class="page-link" onclick="next()"> Next Page</button>
+    </li>
+    {% endif %}
+</ul>
 {% endblock %}
 {% block appendix %}
-    <script>
-        document.getElementById("nav-posts").classList.add("active");
-        function redirectPost(pnumber) {
-            let form = document.createElement('form');
-            document.body.appendChild(form);
-            form.method = 'post';
-            form.action = '/search';
-            let input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'search';
-            input.value = '{{search|safe}}';
-            let number = document.createElement('input');
-            number.type = 'hidden';
-            number.name = 'page_number';
-            number.value = pnumber;
-            form.appendChild(input);
-            form.appendChild(number);
-            form.submit();
-        }
-        function next() {
-            redirectPost('{{page_number + 1}}')
-        }
-        function prev() {
-            redirectPost('{{page_number - 1}}')
-        }
-    </script>
+<script>
+    document.getElementById("nav-posts").classList.add("active");
+
+    function redirectPost(pnumber) {
+        let form = document.createElement('form');
+        document.body.appendChild(form);
+        form.method = 'post';
+        form.action = '/search';
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'search';
+        input.value = '{{search|safe}}';
+        let number = document.createElement('input');
+        number.type = 'hidden';
+        number.name = 'page_number';
+        number.value = pnumber;
+        form.appendChild(input);
+        form.appendChild(number);
+        form.submit();
+    }
+
+    function next() {
+        redirectPost('{{page_number + 1}}')
+    }
+
+    function prev() {
+        redirectPost('{{page_number - 1}}')
+    }
+</script>
 {% endblock %}

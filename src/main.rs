@@ -39,6 +39,7 @@ pub struct ServerState {
     blog_name: String,
     stamp_keeper: Addr<StampKeeper>,
     key_pair: KeyPair,
+    domain: String
 }
 
 pub struct KeyPair {
@@ -61,13 +62,15 @@ async fn start_server<A: AsRef<str>,
     stamp_keeper: Addr<StampKeeper>,
     server_private: botan::Privkey,
     owner_public: botan::Pubkey,
-    blog_name: String
+    blog_name: String,
+    domain: String,
 ) -> anyhow::Result<()> {
     let mut http_server = tide::with_state(ServerState {
         pool,
         blog_name,
         stamp_keeper,
         key_pair: KeyPair { server_private, owner_public },
+        domain
     });
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
     http_server.at("/posts").strip_prefix().get(serve_posts);
@@ -82,6 +85,7 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/comment/submit").post(handle_comment);
     http_server.at("/comment/remove").strip_prefix().get(remove_comment);
     http_server.at("/comment/remove").post(handle_remove_comment);
+    http_server.at("/rss.xml").get(handle_rss);
     http_server.at("/api").post(handle_api);
     http_server.at("/").get(index);
     http_server.middleware(tide::After(error_handle));
@@ -104,7 +108,8 @@ async fn main() -> anyhow::Result<()> {
             owner_public_key,
             postgres,
             blog_name,
-            web_root
+            web_root,
+            domain
         } => {
             tide::log::start();
             let manager =
@@ -136,7 +141,7 @@ async fn main() -> anyhow::Result<()> {
                          pool,
                          stamp_keeper,
                          private_key,
-                         public_key, blog_name).await
+                         public_key, blog_name, domain).await
         }
         crate::cli::Command::Client {
             server_address,
