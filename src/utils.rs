@@ -76,7 +76,22 @@ impl<T: Display> ToTableItem for Option<T> {
 impl ToTableItem for Value {
     fn to_table_item(&self) -> Box<dyn Display> {
         match self {
-            Value::String(x) => Box::new(x.to_string()),
+            Value::String(x) => {
+                let mut content = String::with_capacity(512);
+                for i in x.lines().map(|x|x.trim_end()) {
+                    let mut current = 0;
+                    while current + 60 < i.len() {
+                        content.extend(i[current..current + 60].chars());
+                        if current + 60 < i.len() {
+                            content.extend("\n →".chars());
+                        }
+                        current += 60;
+                    }
+                    content.extend(i[current..i.len()].chars());
+                    content.push('\n');
+                }
+                Box::new(content)
+            }
             Value::Null => Box::new("N/A"),
             Value::Bool(value) => Box::new(*value),
             Value::Number(t) => Box::new(t.to_string()),
