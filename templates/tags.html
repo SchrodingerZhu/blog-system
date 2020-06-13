@@ -28,12 +28,7 @@
         series.randomness = 0.1;
         series.rotationThreshold = 0.5;
 
-        series.data = {
-        {
-            tags_json | safe
-        }
-    }
-        ;
+        series.data = {{tags_json | safe}};
 
         series.dataFields.word = "tag";
         series.dataFields.value = "count";
