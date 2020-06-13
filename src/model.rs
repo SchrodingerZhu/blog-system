@@ -39,10 +39,10 @@ pub struct NewPost<'a> {
 pub struct NewPage<'a> {
     pub title: Option<&'a str>,
     pub content: Option<&'a str>,
-    pub important: Option<bool>
+    pub important: Option<bool>,
 }
 
-#[derive(diesel::Queryable, diesel::Identifiable, serde::Serialize, Debug,  serde::Deserialize)]
+#[derive(diesel::Queryable, diesel::Identifiable, serde::Serialize, Debug, serde::Deserialize)]
 pub struct Page {
     pub id: i32,
     pub title: String,

@@ -30,7 +30,8 @@
                     <input type="text" id="search-input" class="form-control" placeholder="search" aria-label="search"
                            aria-describedby="button-addon2">
                     <div class="input-group-append">
-                        <button class="btn btn-outline-secondary" type="button" id="button-addon2" onclick="redirectPost()">
+                        <button class="btn btn-outline-secondary" type="button" id="button-addon2"
+                                onclick="redirectPost()">
                             Action
                         </button>
                     </div>
@@ -79,6 +80,7 @@ more ...
 {% block appendix %}
 <script>
     document.getElementById("nav-posts").classList.add("active");
+
     function redirectPost() {
         const realInput = document.getElementById("search-input");
         let form = document.createElement('form');

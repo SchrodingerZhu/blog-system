@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use askama::Template;
+use chrono::FixedOffset;
 use diesel::prelude::*;
 use tide::{Redirect, Request, Response, Status, StatusCode};
 
@@ -9,7 +10,6 @@ use crate::crypto::Packet;
 use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
-use chrono::FixedOffset;
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
@@ -469,7 +469,7 @@ pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response
                 .title(x.title.as_str())
                 .updated({
                     chrono::DateTime::<FixedOffset>::from_utc(x.date.clone(),
-                                               chrono::FixedOffset::east(0))
+                                                              chrono::FixedOffset::east(0))
                 })
                 .links(vec![{
                     let mut link = atom_syndication::Link::default();

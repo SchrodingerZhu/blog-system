@@ -1,11 +1,12 @@
 use askama::*;
-use crate::model::{Post, Comment, Page};
+
+use crate::model::{Comment, Page, Post};
 
 #[derive(Template)]
 #[template(path = "post.html")]
 pub struct PostTemplate {
     pub post: Post,
-    pub comments: Vec<Comment>
+    pub comments: Vec<Comment>,
 }
 
 #[derive(Template)]
@@ -13,7 +14,7 @@ pub struct PostTemplate {
 pub struct PostsTemplate<'a> {
     pub blog_name: &'a str,
     pub posts: Vec<Post>,
-    pub page_number: i64
+    pub page_number: i64,
 }
 
 #[derive(Template)]
@@ -31,14 +32,14 @@ pub struct TagTemplate<'a> {
     pub blog_name: &'a str,
     pub name: &'a str,
     pub posts: Vec<Post>,
-    pub page_number: i64
+    pub page_number: i64,
 }
 
 #[derive(Template)]
 #[template(path = "error.html")]
 pub struct ErrorTemplate {
     pub code: String,
-    pub message: Option<String>
+    pub message: Option<String>,
 }
 
 #[derive(serde::Serialize, Ord, PartialOrd, Eq, PartialEq)]
@@ -52,7 +53,7 @@ pub struct Tag<'a> {
 pub struct TagsTemplate<'a> {
     pub tags_json: String,
     pub blog_name: &'a str,
-    pub tags: Vec<Tag<'a>>
+    pub tags: Vec<Tag<'a>>,
 }
 
 #[derive(Template)]
@@ -74,5 +75,5 @@ pub struct PageTemplate<'a> {
 pub struct IndexTemplate<'a> {
     pub blog_name: &'a str,
     pub pages: &'a [Page],
-    pub important_pages: &'a [(String, i32)]
+    pub important_pages: &'a [(String, i32)],
 }

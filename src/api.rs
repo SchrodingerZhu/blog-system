@@ -52,6 +52,15 @@ pub enum JsonResponse {
     Success(usize),
 }
 
+impl JsonResponse {
+    pub fn get_raw_content(&self) -> anyhow::Result<&str> {
+        match self {
+            PostInfo(Post { content, .. }) | CommentInfo(Comment { content, .. }) | PageInfo(Page { content, .. })
+            => Ok(content.as_str()),
+            _ => Err(anyhow::anyhow!("cannot get raw content from server reply"))
+        }
+    }
+}
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(tag = "tag", content = "content")]

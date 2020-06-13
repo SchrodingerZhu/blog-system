@@ -1,11 +1,11 @@
+use std::fmt::Display;
 use std::io::Write;
 
-use tide::{Status, StatusCode};
-use std::fmt::Display;
-use serde::Serialize;
 use anyhow::*;
-use serde_json::*;
 use prettytable::*;
+use serde::Serialize;
+use serde_json::*;
+use tide::{Status, StatusCode};
 
 static KEY_REGEX: &str = r#"Primary key fingerprint: (.+)|Good signature from (".+" \[ultimate\])"#;
 

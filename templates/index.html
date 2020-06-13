@@ -11,9 +11,9 @@
           type="image/png"
           href="/static/img/icon.png">
     <link rel="alternate"
-        href="/atom.xml"
-        title="Atom"
-        type="application/atom+xml">
+          href="/atom.xml"
+          title="Atom"
+          type="application/atom+xml">
     <link rel="alternate"
           href="/rss.xml"
           title="Atom"
@@ -21,7 +21,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
           integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
-    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=EB+Garamond" />
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=EB+Garamond"/>
     <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
     <link rel="stylesheet" type="text/css" href="/static/css/main.css">
     <link rel="stylesheet"
@@ -61,11 +61,12 @@
             <div id="clock" class="text-white clock-box"></div>
             <div class="btn-group-nav">
                 <a class="btn btn-primary btn-nav border" href="/posts"> POSTS </a>
-                <a class="btn btn-primary btn-nav border" href="/tags">  TAGS </a>
+                <a class="btn btn-primary btn-nav border" href="/tags"> TAGS </a>
 
 
                 <!-- Button trigger modal -->
-                <button type="button" class="btn btn-primary btn-nav border" data-toggle="modal" data-target="#pagesModal">
+                <button type="button" class="btn btn-primary btn-nav border" data-toggle="modal"
+                        data-target="#pagesModal">
                     PAGES
                 </button>
 
@@ -76,9 +77,9 @@
                 </div>
 
 
-
                 <!-- Modal -->
-                <div class="modal fade" data-backdrop="false" id="pagesModal" tabindex="-1" role="dialog" aria-labelledby="pagesModal" aria-hidden="true">
+                <div class="modal fade" data-backdrop="false" id="pagesModal" tabindex="-1" role="dialog"
+                     aria-labelledby="pagesModal" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -97,10 +98,11 @@
                                         </li>
                                         {% endfor %}
                                         <li class="nav-item dropdown">
-                                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">All Pages</a>
+                                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#"
+                                               role="button" aria-haspopup="true" aria-expanded="false">All Pages</a>
                                             <div class="dropdown-menu">
                                                 {% for page in pages %}
-                                                    <a class="dropdown-item" href="#page-{{page.id}}">{{page.title}}</a>
+                                                <a class="dropdown-item" href="#page-{{page.id}}">{{page.title}}</a>
                                                 {% endfor %}
                                             </div>
                                         </li>
@@ -108,13 +110,13 @@
                                 </nav>
                                 <div data-spy="scroll" data-target="#navbar-pages" data-offset="0">
                                     {% for page in pages %}
-                                        <div class="shadow-none p-3 mb-5 bg-light rounded" id="page-{{page.id}}">
-                                            <h4>{{page.title}}</h4>
-                                            <pre><code class="language-markdown">{{page.render_abstract()}}</code></pre>
-                                            <a class="btn btn-primary" href="/page/{{page.title}}.html">View More</a>
-                                            <a class="btn btn-primary" href="/raw/page/{{page.id}}">Raw Content</a>
-                                        </div>
-                                        <br/>
+                                    <div class="shadow-none p-3 mb-5 bg-light rounded" id="page-{{page.id}}">
+                                        <h4>{{page.title}}</h4>
+                                        <pre><code class="language-markdown">{{page.render_abstract()}}</code></pre>
+                                        <a class="btn btn-primary" href="/page/{{page.title}}.html">View More</a>
+                                        <a class="btn btn-primary" href="/raw/page/{{page.id}}">Raw Content</a>
+                                    </div>
+                                    <br/>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -130,10 +132,10 @@
 </div>
 <script>
     let test = document.createElement("canvas");
-    let gl   = test.getContext("webgl")
+    let gl = test.getContext("webgl")
         || test.getContext("experimental-webgl");
     let support = gl && gl instanceof WebGLRenderingContext;
-    if( support && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+    if (support && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         VANTA.RINGS({
             el: "#webGLBackground",
             mouseControls: true,

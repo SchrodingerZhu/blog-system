@@ -1,11 +1,12 @@
 use std::ops::Add;
 use std::time::{Duration, UNIX_EPOCH};
 
+use anyhow::*;
 use radix64::STD as base64;
+use serde::Serialize;
 use tide::{Status, StatusCode};
 use xactor::Context;
-use anyhow::*;
-use serde::Serialize;
+
 use crate::KeyPair;
 
 const TIME_OUT: u64 = 30;
@@ -91,7 +92,7 @@ impl Packet {
             }
         }
         let verifier = botan::Verifier::new(&key_pair.owner_public, "PKCS1v15(SHA-256)")
-            .map_err(|_|anyhow!("Verifier Initialization Failed"))?;
+            .map_err(|_| anyhow!("Verifier Initialization Failed"))?;
         let decrypter = botan::Decryptor::new(&key_pair.server_private, "OAEP(SHA-512)")
             .map_err(|_| anyhow!("Decryptor Initialization Failed"))?;
         let symmetric_key = base64.decode(self.symmetric_key.as_bytes())?;
@@ -111,7 +112,7 @@ impl Packet {
             aead.set_key(aead_key.as_slice())
                 .map_err(|_| anyhow!("Invalid AEAD Key"))?;
             aead.process(nonce.as_slice(), message.as_slice())
-                .map_err(|_|anyhow!("AEAD Process Error"))
+                .map_err(|_| anyhow!("AEAD Process Error"))
                 .and_then(|mut x| simd_json::from_slice(x.as_mut_slice())
                     .map_err(Into::into))
         } else {
@@ -120,7 +121,7 @@ impl Packet {
     }
 
     #[allow(unused)]
-    pub async fn from_json_request<T : Serialize>(res: T, key_pair: &KeyPair) -> anyhow::Result<Self> {
+    pub async fn from_json_request<T: Serialize>(res: T, key_pair: &KeyPair) -> anyhow::Result<Self> {
         let mut aead_key = [0; 32];
         let mut nonce = [0; 12];
         let privkey = &key_pair.server_private;
@@ -161,13 +162,12 @@ impl Packet {
     }
 
 
-    pub async fn from_json_request_tide<T : Serialize>(res: T, key_pair: &KeyPair) -> tide::Result<Packet> {
+    pub async fn from_json_request_tide<T: Serialize>(res: T, key_pair: &KeyPair) -> tide::Result<Packet> {
         Self::from_json_request(res, key_pair).await
             .map_err(|x| {
                 tide::Error::from_str(StatusCode::InternalServerError, x)
             })
     }
-
 }
 
 #[cfg(test)]

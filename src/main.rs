@@ -39,7 +39,7 @@ pub struct ServerState {
     blog_name: String,
     stamp_keeper: Addr<StampKeeper>,
     key_pair: KeyPair,
-    domain: String
+    domain: String,
 }
 
 pub struct KeyPair {
@@ -70,7 +70,7 @@ async fn start_server<A: AsRef<str>,
         blog_name,
         stamp_keeper,
         key_pair: KeyPair { server_private, owner_public },
-        domain
+        domain,
     });
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
     http_server.at("/posts").strip_prefix().get(serve_posts);
@@ -98,6 +98,7 @@ async fn start_server<A: AsRef<str>,
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
+    dotenv::dotenv()?;
     let config: crate::cli::Command =
         crate::cli::Command::from_args();
     match config {
@@ -153,6 +154,7 @@ async fn main() -> anyhow::Result<()> {
             command
         } => {
             pretty_env_logger::try_init_timed_custom_env("BLOG_CLIENT_LOG")?;
+            let is_raw = command.is_raw_content();
             let request = command.into_json_request()?;
             let private_key_file =
                 std::fs::read_to_string(private_key.as_path())?;
@@ -187,7 +189,12 @@ async fn main() -> anyhow::Result<()> {
             let real_response: JsonResponse = response
                 .to_json_request(&key_pair, None)
                 .await?;
-            crate::utils::to_table(&real_response)?.printstd();
+            if !is_raw {
+                crate::utils::to_table(&real_response)?.printstd();
+            } else {
+                let content = real_response.get_raw_content()?;
+                println!("{}", content);
+            }
             Ok(())
         }
     }

@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 use std::str::FromStr;
+
 use anyhow::*;
 use structopt::*;
 
 use crate::api::{JsonRequest, ModelType};
-
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
@@ -25,89 +25,95 @@ pub struct TagList(Vec<String>);
 
 #[derive(Debug, StructOpt)]
 pub enum SubCommand {
-    #[structopt(name = "create-post", about = "create a new post")]
+    #[structopt(name = "create-post", about = "Create a new post")]
     CreatePost {
-        #[structopt(short, long, help = "post title")]
+        #[structopt(short, long, help = "Post title")]
         title: String,
-        #[structopt(short, long, help = "path to the post content file")]
+        #[structopt(short, long, help = "Path to the post content file")]
         content_file: PathBuf,
-        #[structopt(short = "g", long, help = "post tags")]
+        #[structopt(short = "g", long, help = "Post tags")]
         tags: TagList,
     },
-    #[structopt(name = "create-page", about = "create a new page")]
+    #[structopt(name = "create-page", about = "Create a new page")]
     CreatePage {
-        #[structopt(short, long, help = "page title")]
+        #[structopt(short, long, help = "Page title")]
         title: String,
-        #[structopt(short, long, help = "path to the page content file")]
+        #[structopt(short, long, help = "Path to the page content file")]
         content_file: PathBuf,
-        #[structopt(short = "m", long, help = "mark the page as an important one")]
+        #[structopt(short = "m", long, help = "Mark the page as an important one")]
         important: bool,
     },
-    #[structopt(name = "update-post", about = "update a post")]
+    #[structopt(name = "update-post", about = "Update a post")]
     UpdatePost {
-        #[structopt(short, long, help = "id number of the post")]
+        #[structopt(short, long, help = "Id number of the post")]
         id: i32,
-        #[structopt(short, long, help = "path to the page content file")]
+        #[structopt(short, long, help = "Path to the page content file")]
         content_file: Option<PathBuf>,
-        #[structopt(short = "g", long, help = "post tags")]
+        #[structopt(short = "g", long, help = "Post tags")]
         tags: Option<TagList>,
-        #[structopt(short, long, help = "post title")]
+        #[structopt(short, long, help = "Post title")]
         title: Option<String>,
     },
-    #[structopt(name = "update-page", about = "update a page")]
+    #[structopt(name = "update-page", about = "Update a page")]
     UpdatePage {
-        #[structopt(short, long, help = "id number of the page")]
+        #[structopt(short, long, help = "Id number of the page")]
         id: i32,
-        #[structopt(short, long, help = "page title")]
+        #[structopt(short, long, help = "Page title")]
         title: Option<String>,
-        #[structopt(short, long, help = "path to the page content file")]
+        #[structopt(short, long, help = "Path to the page content file")]
         content_file: Option<PathBuf>,
-        #[structopt(short = "m", long, help = "whether the page is an important one")]
+        #[structopt(short = "m", long, help = "Whether the page is an important one")]
         important: Option<bool>,
     },
-    #[structopt(name = "remove-post", about = "remove a post")]
+    #[structopt(name = "remove-post", about = "Remove a post")]
     RemovePost {
-        #[structopt(short, long, help = "id number")]
+        #[structopt(short, long, help = "Id number")]
         id: i32
     },
-    #[structopt(name = "remove-page", about = "remove a page")]
+    #[structopt(name = "remove-page", about = "Remove a page")]
     RemovePage {
-        #[structopt(short, long, help = "id number")]
+        #[structopt(short, long, help = "Id number")]
         id: i32
     },
-    #[structopt(name = "remove-comment", about = "remove a comment")]
+    #[structopt(name = "remove-comment", about = "Remove a comment")]
     RemoveComment {
-        #[structopt(short, long, help = "id number")]
+        #[structopt(short, long, help = "Id number")]
         id: i32
     },
-    #[structopt(name = "search-post", about = "search post")]
+    #[structopt(name = "search-post", about = "Search post")]
     SearchPost {
-        #[structopt(short, long, help = "search string")]
+        #[structopt(short, long, help = "Search string")]
         search: String
     },
-    #[structopt(name = "list-comment", about = "list comments")]
+    #[structopt(name = "list-comment", about = "List comments")]
     ListComment {
-        #[structopt(short, long, help = "post id number, set if you only want to related comments")]
+        #[structopt(short, long, help = "Post id number, set if you only want to related comments")]
         post_id: Option<i32>
     },
-    #[structopt(name = "list-post", about = "list posts")]
+    #[structopt(name = "list-post", about = "List posts")]
     ListPost,
-    #[structopt(name = "list-page", about = "list pages")]
+    #[structopt(name = "list-page", about = "List pages")]
     ListPage,
-    #[structopt(name = "check-comment", about = "show a specific comment")]
+    #[structopt(name = "check-comment", about = "Show a specific comment")]
     CheckComment {
-        #[structopt(short, long, help = "id number")]
-        id: i32
+        #[structopt(short, long, help = "Id number")]
+        id: i32,
+        #[structopt(short, long, help = "Show raw content only")]
+        raw: bool,
     },
-    #[structopt(name = "check-post", about = "show a specific post")]
+    #[structopt(name = "check-post", about = "Show a specific post")]
     CheckPost {
-        #[structopt(short, long, help = "id number")]
-        id: i32
+        #[structopt(short, long, help = "Id number")]
+        id: i32,
+        #[structopt(short, long, help = "Show raw content only")]
+        raw: bool,
     },
-    #[structopt(name = "check-page", about = "show a specific page")]
+    #[structopt(name = "check-page", about = "Show a specific page")]
     CheckPage {
-        #[structopt(short, long, help = "id number")]
-        id: i32
+        #[structopt(short, long, help = "Id number")]
+        id: i32,
+        #[structopt(short, long, help = "Show raw content only")]
+        raw: bool,
     },
 }
 
@@ -161,7 +167,7 @@ impl SubCommand {
                     id,
                     title,
                     content,
-                    important
+                    important,
                 }
             }
             SubCommand::RemovePost { id } => {
@@ -197,29 +203,37 @@ impl SubCommand {
                     list_type: ModelType::Page
                 }
             }
-            SubCommand::CheckComment { id } => {
+            SubCommand::CheckComment { id, .. } => {
                 JsonRequest::CheckOperation {
                     id,
-                    check_type: ModelType::Comment
+                    check_type: ModelType::Comment,
                 }
             }
-            SubCommand::CheckPost { id } => {
+            SubCommand::CheckPost { id, .. } => {
                 JsonRequest::CheckOperation {
                     id,
-                    check_type: ModelType::Post
+                    check_type: ModelType::Post,
                 }
             }
-            SubCommand::CheckPage { id } => {
+            SubCommand::CheckPage { id, .. } => {
                 JsonRequest::CheckOperation {
                     id,
-                    check_type: ModelType::Page
+                    check_type: ModelType::Page,
                 }
             }
         })
     }
+
+    pub fn is_raw_content(&self) -> bool {
+        match self {
+            SubCommand::CheckPost { raw, .. } | SubCommand::CheckComment { raw, .. } | SubCommand::CheckPage { raw, .. }
+            => *raw,
+            _ => false
+        }
+    }
 }
 
-fn confirm<S : AsRef<str>>(msg: S) -> anyhow::Result<()> {
+fn confirm<S: AsRef<str>>(msg: S) -> anyhow::Result<()> {
     println!("Are you sure to {} [Y/n]: ", msg.as_ref());
     let mut buffer = String::new();
     std::io::stdin().read_line(&mut buffer)?;

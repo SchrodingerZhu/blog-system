@@ -1,75 +1,81 @@
 {% extends "base.html" %}
 {% block title %}{{ blog_name }} | Tag {% endblock %}
 {% block head %}
-    <style>
-        #chartdiv {
-            width: 100%;
-            height: 600px;
-        }
-    </style>
+<style>
+    #chartdiv {
+        width: 100%;
+        height: 600px;
+    }
+</style>
 
 
-    <script src="https://www.amcharts.com/lib/4/core.js"></script>
-    <script src="https://www.amcharts.com/lib/4/charts.js"></script>
-    <script src="https://www.amcharts.com/lib/4/plugins/wordCloud.js"></script>
-    <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/charts.js"></script>
+<script src="https://www.amcharts.com/lib/4/plugins/wordCloud.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
 
 
-    <script>
-        am4core.ready(function () {
+<script>
+    am4core.ready(function () {
 
 // Themes begin
-            am4core.useTheme(am4themes_animated);
+        am4core.useTheme(am4themes_animated);
 // Themes end
 
-            var chart = am4core.create("chartdiv", am4plugins_wordCloud.WordCloud);
-            chart.fontFamily = "Courier New";
-            var series = chart.series.push(new am4plugins_wordCloud.WordCloudSeries());
-            series.randomness = 0.1;
-            series.rotationThreshold = 0.5;
+        var chart = am4core.create("chartdiv", am4plugins_wordCloud.WordCloud);
+        chart.fontFamily = "Courier New";
+        var series = chart.series.push(new am4plugins_wordCloud.WordCloudSeries());
+        series.randomness = 0.1;
+        series.rotationThreshold = 0.5;
 
-            series.data = {{tags_json|safe}};
+        series.data = {
+        {
+            tags_json | safe
+        }
+    }
+        ;
 
-            series.dataFields.word = "tag";
-            series.dataFields.value = "count";
+        series.dataFields.word = "tag";
+        series.dataFields.value = "count";
 
-            series.heatRules.push({
-                "target": series.labels.template,
-                "property": "fill",
-                "min": am4core.color("#0000CC"),
-                "max": am4core.color("#CC00CC"),
-                "dataField": "value"
-            });
+        series.heatRules.push({
+            "target": series.labels.template,
+            "property": "fill",
+            "min": am4core.color("#0000CC"),
+            "max": am4core.color("#CC00CC"),
+            "dataField": "value"
+        });
 
-            series.labels.template.url = "/tag/{word}";
-            series.labels.template.urlTarget = "_blank";
-            series.labels.template.tooltipText = "{word}: {value}";
+        series.labels.template.url = "/tag/{word}";
+        series.labels.template.urlTarget = "_blank";
+        series.labels.template.tooltipText = "{word}: {value}";
 
-            var hoverState = series.labels.template.states.create("hover");
-            hoverState.properties.fill = am4core.color("#FF0000");
+        var hoverState = series.labels.template.states.create("hover");
+        hoverState.properties.fill = am4core.color("#FF0000");
 
-            var subtitle = chart.titles.create();
-            subtitle.text = "(click to open)";
+        var subtitle = chart.titles.create();
+        subtitle.text = "(click to open)";
 
-            var title = chart.titles.create();
-            title.text = "Most Popular Tags";
-            title.fontSize = 20;
-            title.fontWeight = "800";
+        var title = chart.titles.create();
+        title.text = "Most Popular Tags";
+        title.fontSize = 20;
+        title.fontWeight = "800";
 
-        }); // end am4core.ready()
-    </script>
+    }); // end am4core.ready()
+</script>
 
 {% endblock %}
 {% block body %}
-    <div id="chartdiv"></div>
-    <ul class="list-group">
-        {% for tag in tags %}
-        <a href="/tag/{{tag.tag}}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-            {{tag.tag}}
-            <span class="badge badge-primary badge-pill">{{tag.count}}</span>
-        </a>
-        {% endfor %}
-    </ul>
+<div id="chartdiv"></div>
+<ul class="list-group">
+    {% for tag in tags %}
+    <a href="/tag/{{tag.tag}}"
+       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        {{tag.tag}}
+        <span class="badge badge-primary badge-pill">{{tag.count}}</span>
+    </a>
+    {% endfor %}
+</ul>
 {% endblock %}
 
 {% block appendix %}
