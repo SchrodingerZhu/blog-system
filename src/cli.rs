@@ -42,4 +42,15 @@ pub enum Command {
         #[structopt(subcommand)]
         command: SubCommand,
     },
+    #[structopt(name = "key-gen", about = "Generate a key pair")]
+    KeyGen {
+        #[structopt(short = "P", long, help = "Path to store private key", default_value = "./private.pem")]
+        private_key_path: PathBuf,
+        #[structopt(short, long, help = "Path to store public key", default_value = "./public.pem")]
+        public_key_path: PathBuf,
+        #[structopt(short, long, help = "Encrypt the private key with password")]
+        encryption: bool,
+        #[structopt(short = "l", long, help = "The length of the RSA private key", default_value = "4096")]
+        key_length: usize,
+    },
 }

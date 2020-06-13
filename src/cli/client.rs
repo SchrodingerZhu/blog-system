@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use anyhow::*;
 use structopt::*;
-
+use crate::utils::confirm;
 use crate::api::{JsonRequest, ModelType};
 
 #[derive(Debug, StructOpt)]
@@ -233,13 +233,3 @@ impl SubCommand {
     }
 }
 
-fn confirm<S: AsRef<str>>(msg: S) -> anyhow::Result<()> {
-    println!("Are you sure to {} [Y/n]: ", msg.as_ref());
-    let mut buffer = String::new();
-    std::io::stdin().read_line(&mut buffer)?;
-    if "y" == buffer.trim().to_ascii_lowercase() {
-        Ok(())
-    } else {
-        Err(anyhow!("operation cancelled"))
-    }
-}

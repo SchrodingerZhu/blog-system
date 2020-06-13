@@ -197,5 +197,35 @@ async fn main() -> anyhow::Result<()> {
             }
             Ok(())
         }
+        crate::cli::Command::KeyGen {
+            private_key_path,
+            public_key_path,
+            encryption,
+            key_length
+        } => {
+            utils::confirm(format!("generate the key pair ({:?},{:?}, encryption: {})",
+                                   private_key_path, public_key_path, encryption))?;
+            let random = botan::RandomNumberGenerator::new_system()
+                .map_err(|x| anyhow!("{:?}", x))?;
+            let private_key = botan::Privkey::create(
+                "RSA",
+                key_length.to_string().as_str(),
+                &random,
+            ).map_err(|x| anyhow!("{:?}", x))?;
+            let private_key_pem = if encryption {
+                let password = rpassword::prompt_password_stdout("please input password: ")?;
+                private_key.pem_encode_encrypted(password.as_str(), &random)
+                    .map_err(|x| anyhow!("{:?}", x))?
+            } else {
+                private_key.pem_encode()
+                    .map_err(|x| anyhow!("{:?}", x))?
+            };
+            let public_key_pem = private_key.pubkey()
+                .and_then(|x| x.pem_encode())
+                .map_err(|x| anyhow!("{:?}", x))?;
+            std::fs::write(private_key_path, private_key_pem)?;
+            std::fs::write(public_key_path, public_key_pem)?;
+            Ok(())
+        }
     }
 }

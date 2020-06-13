@@ -118,3 +118,14 @@ impl ToTableItem for Value {
 }
 
 
+pub fn confirm<S: AsRef<str>>(msg: S) -> anyhow::Result<()> {
+    print!("Are you sure to {} [Y/n]: ", msg.as_ref());
+    std::io::stdout().flush()?;
+    let mut buffer = String::new();
+    std::io::stdin().read_line(&mut buffer)?;
+    if "y" == buffer.trim().to_ascii_lowercase() {
+        Ok(())
+    } else {
+        Err(anyhow!("operation cancelled"))
+    }
+}

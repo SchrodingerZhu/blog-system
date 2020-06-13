@@ -3,6 +3,8 @@ name = "utopia"
 version = "0.1.0"
 authors = ["SchrodingerZhu <i@zhuyi.fan>"]
 edition = "2018"
+homepage = "https://zhuyi.fan"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
