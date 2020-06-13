@@ -11,6 +11,7 @@ use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
 
+
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
 pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Response> {
@@ -73,6 +74,7 @@ pub async fn error_handle(result: tide::Result<Response>) -> tide::Result<tide::
 
 pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl as p;
+    use crate::schema::lower;
     let path = request.url().path().trim_start_matches("/");
     if path.contains('/') || !path.ends_with(".html") {
         return Ok(Response::new(StatusCode::NotFound));
@@ -83,7 +85,7 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
     let post: Post = p::posts
         .select(POST_COLUMNS)
-        .filter(p::title.eq(name))
+        .filter(lower(p::title).eq(name.to_ascii_lowercase()))
         .first::<Post>(&conn)
         .status(StatusCode::NotFound)?;
     let all_comments = Comment::belonging_to(&post)
@@ -98,6 +100,7 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
 
 pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::pages::dsl as p;
+    use crate::schema::lower;
     let path = request.url().path().trim_start_matches("/");
     if path.contains('/') || !path.ends_with(".html") {
         return Ok(Response::new(StatusCode::NotFound));
@@ -107,7 +110,7 @@ pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response>
     let name = path.trim_end_matches(".html");
     let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
     let page = p::pages
-        .filter(p::title.eq(name))
+        .filter(lower(p::title).eq(name.to_ascii_lowercase()))
         .first::<Page>(&conn)
         .status(StatusCode::NotFound)?;
     let template = crate::template::PageTemplate {

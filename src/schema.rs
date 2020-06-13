@@ -36,3 +36,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     pages,
     posts,
 );
+
+diesel::sql_function!(fn lower(x: diesel::types::Varchar) -> diesel::types::Varchar);
