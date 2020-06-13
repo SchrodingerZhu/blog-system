@@ -13,7 +13,7 @@ pub async fn simdjson_body<T, State>(req: &mut tide::Request<State>) -> tide::Re
     where for<'a> T: serde::de::Deserialize<'a> {
     let mut res = req.body_bytes()
         .await?;
-    Ok(simd_json::from_slice(res.as_mut_slice()).status(StatusCode::UnprocessableEntity)?)
+    simd_json::from_slice(res.as_mut_slice()).status(StatusCode::UnprocessableEntity)
 }
 
 pub(crate) fn gpg_decrypt(content: &str) -> anyhow::Result<(String, String)> {
