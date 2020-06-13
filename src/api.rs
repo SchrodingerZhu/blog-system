@@ -109,7 +109,6 @@ impl JsonRequest {
                         content: Some(content),
                         important: Some(*important),
                     })
-                    .on_conflict_do_nothing()
                     .execute(conn)
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
@@ -137,7 +136,6 @@ impl JsonRequest {
                         tags: Some(tag),
                         content: Some(content),
                     })
-                    .on_conflict_do_nothing()
                     .execute(conn)
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
