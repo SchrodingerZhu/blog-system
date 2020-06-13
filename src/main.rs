@@ -98,7 +98,9 @@ async fn start_server<A: AsRef<str>,
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv::dotenv()?;
+    dotenv::dotenv()
+        .map(|x| log::info!("dot env initialized with {:?}", x))
+        .unwrap_or_else(|x| log::error!("dot env not initialized {}", x));
     let config: crate::cli::Command =
         crate::cli::Command::from_args();
     match config {
