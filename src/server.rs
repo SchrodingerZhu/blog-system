@@ -181,9 +181,11 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
         url_split[1].parse()?
     } else { 0 };
 
+    let real_tag = percent_encoding::percent_decode_str(url_split[0])
+        .decode_utf8()?;
     let all_posts = posts
         .select(POST_COLUMNS)
-        .filter(tags.contains(vec![url_split[0]]))
+        .filter(tags.contains(vec![real_tag.as_ref()]))
         .limit(20)
         .offset(page_number * 20)
         .load::<Post>(&conn)
@@ -191,7 +193,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
 
     let tag_template = TagTemplate {
         blog_name: request.state().blog_name.as_str(),
-        name: url_split[0],
+        name: real_tag.as_ref(),
         posts: all_posts,
         page_number,
     };
