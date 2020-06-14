@@ -129,11 +129,15 @@ impl JsonRequest {
             PostCreate { title, content, tag } => {
                 use crate::schema::posts::dsl as p;
                 let time = Utc::now().naive_local();
+                let mut tag : Vec<String> = tag.iter()
+                    .map(|x| x.trim().to_ascii_lowercase()).collect();
+                tag.sort();
+                tag.dedup_by(|x, y| x == y);
                 diesel::insert_into(p::posts)
                     .values(NewPost {
                         title: Some(title),
                         date: Some(&time),
-                        tags: Some(tag),
+                        tags: Some(&tag),
                         content: Some(content),
                     })
                     .execute(conn)

@@ -11,7 +11,6 @@ use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
 
-
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
 pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Response> {
@@ -82,7 +81,8 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let name = path.trim_end_matches(".html");
-    let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
+    let name = percent_encoding::percent_decode_str(name).decode_utf8()?
+        .replace("-", " ");
     let post: Post = p::posts
         .select(POST_COLUMNS)
         .filter(lower(p::title).eq(name.to_ascii_lowercase()))
@@ -108,7 +108,8 @@ pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response>
     let conn = request
         .state().pool.get().status(StatusCode::InternalServerError)?;
     let name = path.trim_end_matches(".html");
-    let name = percent_encoding::percent_decode_str(name).decode_utf8()?;
+    let name = percent_encoding::percent_decode_str(name).decode_utf8()?
+        .replace("-", " ");
     let page = p::pages
         .filter(lower(p::title).eq(name.to_ascii_lowercase()))
         .first::<Page>(&conn)
@@ -168,7 +169,8 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
     let title: String = p::posts.select(p::title).filter(p::id.eq(form.post_id))
         .first(&conn)
         .status(StatusCode::NotFound)?;
-    Ok(Redirect::new(format!("/post/{}.html", title)).into())
+    Ok(Redirect::new(format!("/post/{}.html", title.replace(" ", "-")
+        .to_ascii_lowercase())).into())
 }
 
 pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Response> {
@@ -184,11 +186,12 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
         url_split[1].parse()?
     } else { 0 };
 
-    let real_tag = percent_encoding::percent_decode_str(url_split[0])
+    let old_tag = percent_encoding::percent_decode_str(url_split[0])
         .decode_utf8()?;
+    let real_tag = old_tag.replace("-", " ");
     let all_posts = posts
         .select(POST_COLUMNS)
-        .filter(tags.contains(vec![real_tag.as_ref()]))
+        .filter(tags.contains(vec![real_tag.as_str()]))
         .limit(20)
         .offset(page_number * 20)
         .load::<Post>(&conn)
@@ -199,6 +202,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
         name: real_tag.as_ref(),
         posts: all_posts,
         page_number,
+        translated_name: old_tag.as_ref()
     };
     let page = tag_template.render()?;
     Ok(
@@ -257,14 +261,14 @@ pub async fn serve_tags(request: Request<ServerState>) -> tide::Result<Response>
         .into_iter()
         .flatten()
         .collect();
-    let map = all_tags.iter()
+    let map = all_tags.into_iter()
         .fold(hashbrown::HashMap::new(), |mut acc, next| {
-            *acc.entry(next).or_insert(0) += 1;
+            *acc.entry(next.to_ascii_lowercase()).or_insert(0) += 1;
             acc
         });
     let mut tag_vector = Vec::new();
-    for (tag, count) in &map {
-        tag_vector.push(Tag { tag, count: *count });
+    for (tag, count) in map.into_iter() {
+        tag_vector.push(Tag { tag, count });
     }
     tag_vector.sort_by(|x, y| y.cmp(x));
     let template = crate::template::TagsTemplate {
@@ -366,7 +370,8 @@ pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::R
         diesel::delete(comments.filter(id.eq(remove.id))).execute(&conn)?;
         let ctitle: String = p::posts.select(p::title).filter(p::id.eq(cpost_id))
             .first(&conn)?;
-        Ok(Redirect::new(format!("/post/{}.html", ctitle)).into())
+        Ok(Redirect::new(format!("/post/{}.html", ctitle.replace(" ", "-")
+            .to_ascii_lowercase())).into())
     }
 }
 
@@ -377,7 +382,13 @@ pub async fn index(request: Request<ServerState>) -> tide::Result<Response> {
     let all_pages = pages.load::<Page>(&conn)?;
     let important_pages = pages.select((title, id))
         .filter(important)
-        .load(&conn)?;
+        .load::<(String, i32)>(&conn)?
+        .into_iter()
+        .map(|(x, y)| {
+            let z = x.to_ascii_lowercase().replace(" ", "-");
+            (x, y, z)
+        })
+        .collect::<Vec<_>>();
     let index = crate::template::IndexTemplate {
         blog_name: request.state().blog_name.as_str(),
         pages: &all_pages,
@@ -421,7 +432,7 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
         .map(|x| rss::ItemBuilder::default()
             .title(Some(x.title.clone()))
             .link(Some(format!("{}/post/{}.html", request.state().domain,
-                               x.title)))
+                               x.title.to_ascii_lowercase().replace(" ", "-"))))
             .pub_date(Some(x.date.to_string()))
             .content(Some({
                 let parser = pulldown_cmark::Parser::new(x.content.as_str());
@@ -476,7 +487,8 @@ pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response
                 })
                 .links(vec![{
                     let mut link = atom_syndication::Link::default();
-                    link.set_href(format!("{}/post/{}.html", request.state().domain, x.title));
+                    link.set_href(format!("{}/post/{}.html", request.state().domain, x.title
+                        .to_ascii_lowercase().replace(" ", "-")));
                     link.set_title(x.title.clone());
                     link
                 }])

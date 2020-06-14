@@ -97,6 +97,11 @@ impl Page {
         pulldown_cmark::html::push_html(&mut buffer, cmark);
         buffer
     }
+    pub fn translate_title(&self) -> String {
+        self.title
+            .replace(" ", "-")
+            .to_ascii_lowercase()
+    }
 }
 
 pub type PostColumns = (
@@ -144,6 +149,12 @@ impl Post {
                 .load::<Post>(connection)
                 .status(StatusCode::InternalServerError)
         }
+    }
+
+    pub fn translate_title(&self) -> String {
+        self.title
+            .replace(" ", "-")
+            .to_ascii_lowercase()
     }
 }
 

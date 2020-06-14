@@ -33,6 +33,7 @@ pub struct TagTemplate<'a> {
     pub name: &'a str,
     pub posts: Vec<Post>,
     pub page_number: i64,
+    pub translated_name: &'a str
 }
 
 #[derive(Template)]
@@ -43,9 +44,15 @@ pub struct ErrorTemplate {
 }
 
 #[derive(serde::Serialize, Ord, PartialOrd, Eq, PartialEq)]
-pub struct Tag<'a> {
+pub struct Tag {
     pub count: i32,
-    pub tag: &'a str,
+    pub tag: String,
+}
+
+impl Tag {
+    pub fn translate_name(&self) -> String {
+        self.tag.replace(" ", "-")
+    }
 }
 
 #[derive(Template)]
@@ -53,7 +60,7 @@ pub struct Tag<'a> {
 pub struct TagsTemplate<'a> {
     pub tags_json: String,
     pub blog_name: &'a str,
-    pub tags: Vec<Tag<'a>>,
+    pub tags: Vec<Tag>,
 }
 
 #[derive(Template)]
@@ -75,5 +82,5 @@ pub struct PageTemplate<'a> {
 pub struct IndexTemplate<'a> {
     pub blog_name: &'a str,
     pub pages: &'a [Page],
-    pub important_pages: &'a [(String, i32)],
+    pub important_pages: &'a [(String, i32, String)],
 }
