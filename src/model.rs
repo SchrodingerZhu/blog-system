@@ -156,6 +156,13 @@ impl Post {
             .replace(" ", "-")
             .to_ascii_lowercase()
     }
+
+    pub fn translate_tags(&self) -> Vec<(&str, String)> {
+        self.tags.iter()
+            .map(|x| (x.as_str(), x.to_ascii_lowercase()
+                .replace(" ", "-")))
+            .collect()
+    }
 }
 
 diesel::joinable!(comments -> posts (post_id));

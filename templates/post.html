@@ -39,8 +39,8 @@
 <div class="tag-area" data-toggle="buttons">
     <h2>Tags</h2>
     <br/>
-    {% for tag in post.tags %}
-    <a href="/tag/{{tag}}" class="btn btn-primary">{{tag}}</a>
+    {% for tag in post.translate_tags() %}
+    <a href="/tag/{{tag.1}}" class="btn btn-primary">{{tag.0}}</a>
     {% endfor %}
 </div>
 {# The following part is the comments area #}
