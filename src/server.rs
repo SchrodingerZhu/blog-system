@@ -187,7 +187,8 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
     } else { 0 };
 
     let old_tag = percent_encoding::percent_decode_str(url_split[0])
-        .decode_utf8()?;
+        .decode_utf8()?
+        .to_ascii_lowercase();
     let real_tag = old_tag.replace("-", " ");
     let all_posts = posts
         .select(POST_COLUMNS)
