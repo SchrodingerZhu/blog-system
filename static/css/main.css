@@ -53,8 +53,8 @@ html, body {
     text-decoration: none;
 }
 
-.md-content img:not(.img-thumbnail) {
-    width: 100%;
+.md-content img {
+    max-width: 100%;
     height: auto;
 }
 
