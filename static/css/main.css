@@ -59,13 +59,13 @@ html, body {
 }
 
 .md-content .svg-scroll {
-    overflow-x: scroll;
+    overflow-x: auto;
 }
 
 .md-content pre code {
-    overflow-x: scroll;
+    overflow-x: auto;
 }
 
 .md-content .MathJax {
-    overflow-x: scroll;
+    overflow-x: auto;
 }
