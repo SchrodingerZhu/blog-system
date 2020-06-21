@@ -53,7 +53,8 @@
         </div>
         <div class="card-body">
             <h5 class="card-title">{{post.title}}</h5>
-            <p class="card-text"> {{post.date.to_string()}} </p>
+            <p class="card-text"> publish: {{post.public_date.to_string()}} </p>
+            <p class="card-text"> update:  {{post.update_date.to_string()}} </p>
             <pre><code class="language-markdown">{{post.get_abstract()}}
 more ...
             </code></pre>

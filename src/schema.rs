@@ -24,7 +24,8 @@ diesel::table! {
     posts (id) {
         id -> Int4,
         title -> Varchar,
-        date -> Timestamp,
+        public_date -> Timestamp,
+        update_date -> Timestamp,
         tags -> Array<Text>,
         content -> Text,
         text_searchable -> diesel_full_text_search::TsVector,

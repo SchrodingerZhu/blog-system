@@ -41,7 +41,7 @@ pub enum JsonRequest {
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(tag = "response_type", content = "response_body")]
 pub enum JsonResponse {
-    PostList(Vec<(i32, String, chrono::NaiveDateTime)>),
+    PostList(Vec<(i32, String, chrono::NaiveDateTime, chrono::NaiveDateTime)>),
     PostSearchList(Vec<Post>),
     CommentList(Vec<Comment>),
     PageList(Vec<(i32, String)>),
@@ -86,7 +86,8 @@ impl JsonRequest {
                 let time = Utc::now().naive_local();
                 let change_set = NewPost {
                     title: title.as_ref().map(|x| x.as_str()),
-                    date: Some(&time),
+                    update_date: Some(&time),
+                    public_date: None,
                     tags: tags.as_ref().map(|x| x.as_slice()),
                     content: content.as_ref().map(|x| x.as_str()),
                 };
@@ -136,7 +137,8 @@ impl JsonRequest {
                 diesel::insert_into(p::posts)
                     .values(NewPost {
                         title: Some(title),
-                        date: Some(&time),
+                        public_date: Some(&time),
+                        update_date: Some(&time),
                         tags: Some(&tag),
                         content: Some(content),
                     })
@@ -162,7 +164,7 @@ impl JsonRequest {
                     ModelType::Post => {
                         use crate::schema::posts::dsl as p;
                         p::posts
-                            .select((p::id, p::title, p::date))
+                            .select((p::id, p::title, p::public_date, p::update_date))
                             .load(conn)
                             .map(|x| PostList(x))
                             .unwrap_or_else(Into::into)

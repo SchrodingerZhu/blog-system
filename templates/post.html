@@ -30,7 +30,8 @@
 {% endblock %}
 {% block body %}
 <h1> {{ post.title }} </h1>
-<p> date: {{ post.date.to_string() }}</p>
+<p> public date: {{ post.public_date.to_string() }}</p>
+<p> update date: {{ post.update_date.to_string() }}</p>
 <div class="text-content shadow-lg p-3 mb-5 bg-light rounded">
     {# The following part is the markdown rendered result #}
     {{ post.render_content()|safe }}

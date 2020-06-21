@@ -434,7 +434,7 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
             .title(Some(x.title.clone()))
             .link(Some(format!("{}/post/{}.html", request.state().domain,
                                x.title.to_ascii_lowercase().replace(" ", "-"))))
-            .pub_date(Some(x.date.to_string()))
+            .pub_date(Some(x.public_date.to_string()))
             .content(Some({
                 let parser = pulldown_cmark::Parser::new(x.content.as_str());
                 let mut rendered = String::with_capacity(512);
@@ -483,7 +483,11 @@ pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response
             .and_then(|the_content| atom_syndication::EntryBuilder::default()
                 .title(x.title.as_str())
                 .updated({
-                    chrono::DateTime::<FixedOffset>::from_utc(x.date.clone(),
+                    chrono::DateTime::<FixedOffset>::from_utc(x.update_date.clone(),
+                                                              chrono::FixedOffset::east(0))
+                })
+                .published( {
+                    chrono::DateTime::<FixedOffset>::from_utc(x.public_date.clone(),
                                                               chrono::FixedOffset::east(0))
                 })
                 .links(vec![{

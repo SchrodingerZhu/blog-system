@@ -7,7 +7,8 @@ use crate::schema::{comments, pages, posts};
 pub struct Post {
     pub id: i32,
     pub title: String,
-    pub date: chrono::NaiveDateTime,
+    pub public_date: chrono::NaiveDateTime,
+    pub update_date: chrono::NaiveDateTime,
     pub tags: Vec<String>,
     pub content: String,
 }
@@ -29,7 +30,8 @@ impl Post {
 #[table_name = "posts"]
 pub struct NewPost<'a> {
     pub title: Option<&'a str>,
-    pub date: Option<&'a chrono::NaiveDateTime>,
+    pub public_date: Option<&'a chrono::NaiveDateTime>,
+    pub update_date: Option<&'a chrono::NaiveDateTime>,
     pub tags: Option<&'a [String]>,
     pub content: Option<&'a str>,
 }
@@ -107,7 +109,8 @@ impl Page {
 pub type PostColumns = (
     crate::schema::posts::id,
     crate::schema::posts::title,
-    crate::schema::posts::date,
+    crate::schema::posts::public_date,
+    crate::schema::posts::update_date,
     crate::schema::posts::tags,
     crate::schema::posts::content
 );
@@ -116,7 +119,8 @@ pub type PostColumns = (
 pub const POST_COLUMNS: PostColumns = (
     crate::schema::posts::id,
     crate::schema::posts::title,
-    crate::schema::posts::date,
+    crate::schema::posts::public_date,
+    crate::schema::posts::update_date,
     crate::schema::posts::tags,
     crate::schema::posts::content
 );
