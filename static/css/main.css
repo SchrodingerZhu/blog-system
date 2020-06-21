@@ -53,7 +53,7 @@ html, body {
     text-decoration: none;
 }
 
-.md-content img {
+.md-content img:not(.img-thumbnail) {
     width: 100%;
     height: auto;
 }
