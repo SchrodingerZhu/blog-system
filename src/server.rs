@@ -26,6 +26,7 @@ pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Re
     };
     let all_posts = posts
         .select(POST_COLUMNS)
+        .order_by(id)
         .limit(20)
         .offset(page_number * 20)
         .load::<Post>(&conn)
@@ -192,6 +193,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
     let real_tag = old_tag.replace("-", " ");
     let all_posts = posts
         .select(POST_COLUMNS)
+        .order_by(id)
         .filter(tags.contains(vec![real_tag.as_str()]))
         .limit(20)
         .offset(page_number * 20)

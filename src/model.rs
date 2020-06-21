@@ -143,6 +143,7 @@ impl Post {
         if let Some(page_number) = page_number {
             query
                 .select(POST_COLUMNS)
+                .order_by(id)
                 .limit(20)
                 .offset(page_number * 20)
                 .load::<Post>(connection)
@@ -150,6 +151,7 @@ impl Post {
         } else {
             query
                 .select(POST_COLUMNS)
+                .order_by(id)
                 .load::<Post>(connection)
                 .status(StatusCode::InternalServerError)
         }

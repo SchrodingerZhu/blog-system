@@ -17,7 +17,7 @@
             fontCache: 'global'
         },
         "HTML-CSS": {
-            linebreaks: { automatic: true, width: "container" }
+            linebreaks: {automatic: true, width: "container"}
         }
     };
 </script>
@@ -33,9 +33,13 @@
 {% endblock %}
 {% block body %}
 <h1> {{ post.title }} </h1>
-<p> public date: {{ post.public_date.to_string() }}</p>
-<p> update date: {{ post.update_date.to_string() }}</p>
-<div class="text-content shadow-lg p-3 mb-5 bg-light rounded extend-height">
+<div class="row p-2">
+    <p class="text-muted rounded col"><i class="material-icons">book</i>
+        Public Date: {{post.public_date.to_string() }}</p>
+    <p class="text-muted rounded col"><i class="material-icons">update</i>
+        Update Date: {{post.update_date.to_string() }}</p>
+</div>
+<div class="text-content shadow-lg p-3 mb-5 bg-white rounded extend-height">
     {# The following part is the markdown rendered result #}
     <div class="md-content">
         {{ post.render_content()|safe }}
@@ -43,7 +47,7 @@
     <a href="/raw/post/{{post.id}}" class="btn btn-primary"> Raw Content </a>
 </div>
 <div class="tag-area" data-toggle="buttons">
-    <h2>Tags</h2>
+    <h2><i class="material-icons">bookmarks</i> Tags</h2>
     <br/>
     {% for tag in post.translate_tags() %}
     <a href="/tag/{{tag.1}}" class="btn btn-primary">{{tag.0}}</a>
@@ -51,57 +55,69 @@
 </div>
 {# The following part is the comments area #}
 <div class="commit-submit">
-    <h2> Submit New Comment </h2>
+    <h2 class="pt-2 pb-2"> Submit New Comment </h2>
     <form action="/comment/submit" method="post" class="form-group" id="comment-form">
-        <label for="comment_nickname"> Nickname:</label>
-        <input type="text" class="form-control" id="comment_nickname" name="comment_nickname">
-        <label for="comment_email"> Email:</label>
-        <input type="text" class="form-control" id="comment_email" name="comment_email">
-        <input type="hidden" id="post_id" name="post_id" value="{{post.id}}">
+        <div class="row">
+            <div class="col">
+                <label for="comment_nickname"> Nickname:</label>
+                <input type="text" class="form-control" id="comment_nickname" name="comment_nickname">
+            </div>
+            <div class="col">
+                <label for="comment_email"> Email:</label>
+                <input type="text" class="form-control" id="comment_email" name="comment_email">
+                <input type="hidden" id="post_id" name="post_id" value="{{post.id}}">
+            </div>
+        </div>
     </form>
     <textarea id="comment_content" name="comment_content"
               form="comment-form">Enter armored signed content here...</textarea>
     <input type="submit" class="btn btn-primary" form="comment-form" value="Submit">
 </div>
-<div class="comment-area">
-    <h2> Comments </h2>
+<div class="comment-area pt-4">
+    <h2><i class="material-icons">question_answer</i> Comments</h2>
     <br/>
-    {% for comment in comments %}
-    <div class="row shadow p-3 mb-5 bg-white rounded">
-        <div class="col-4">
-            <div class="list-group" id="list-tab{{comment.id}}" role="tablist">
-                <a class="list-group-item list-group-item-action active" id="list-content-list{{comment.id}}"
-                   data-toggle="list" href="#list-content{{comment.id}}" role="tab" aria-controls="home{{comment.id}}">Content</a>
-                <a class="list-group-item list-group-item-action" id="list-information-list{{comment.id}}"
-                   data-toggle="list" href="#list-information{{comment.id}}" role="tab"
-                   aria-controls="profile{{comment.id}}">Information</a>
-                <a class="list-group-item list-group-item-action" id="list-control-list{{comment.id}}"
-                   data-toggle="list" href="#list-control{{comment.id}}" role="tab"
-                   aria-controls="messages{{comment.id}}">Options</a>
-            </div>
+    {% if comments.is_empty() %}
+        <div class="text-center text-muted">
+            No Comment Yet~
         </div>
-        <div class="col-8">
-            <div class="tab-content" id="nav-tabContent{{comment.id}}">
-                <div class="overflow-auto tab-pane fade show active" id="list-content{{comment.id}}" role="tabpanel"
-                     aria-labelledby="list-content-list{{comment.id}}">{{comment.render_safe_content()|safe}}
-                </div>
-                <div class="overflow-auto tab-pane fade" id="list-information{{comment.id}}" role="tabpanel"
-                     aria-labelledby="list-information-list{{comment.id}}">
-                    <p>Nickname: {{comment.nickname}}</p>
-                    <p>Comment ID: {{comment.id}}</p>
-                    <p>Email: {{comment.email}}</p>
-                    <p>FingerPrint: {{comment.finger_print}}</p>
-                </div>
-                <div class="overflow-auto tab-pane fade" id="list-control{{comment.id}}" role="tabpanel"
-                     aria-labelledby="list-control-list{{comment.id}}">
-                    <a href="/raw/comment/{{comment.id}}" class="btn btn-primary">Raw Content</a>
-                    <a href="/comment/remove/{{comment.id}}" class="btn btn-primary">Delete Content</a>
+    {% else %}
+        {% for comment in comments %}
+        <div class="row shadow p-3 mb-5 bg-white rounded">
+            <div class="col-4">
+                <div class="list-group" id="list-tab{{comment.id}}" role="tablist">
+                    <a class="list-group-item list-group-item-action active" id="list-content-list{{comment.id}}"
+                       data-toggle="list" href="#list-content{{comment.id}}" role="tab" aria-controls="home{{comment.id}}">Content</a>
+                    <a class="list-group-item list-group-item-action" id="list-information-list{{comment.id}}"
+                       data-toggle="list" href="#list-information{{comment.id}}" role="tab"
+                       aria-controls="profile{{comment.id}}">Information</a>
+                    <a class="list-group-item list-group-item-action" id="list-control-list{{comment.id}}"
+                       data-toggle="list" href="#list-control{{comment.id}}" role="tab"
+                       aria-controls="messages{{comment.id}}">Options</a>
                 </div>
             </div>
+            <div class="col-8">
+                <div class="tab-content" id="nav-tabContent{{comment.id}}">
+                    <div class="overflow-auto tab-pane fade show active" id="list-content{{comment.id}}" role="tabpanel"
+                         aria-labelledby="list-content-list{{comment.id}}">{{comment.render_safe_content()|safe}}
+                    </div>
+                    <div class="overflow-auto tab-pane fade" id="list-information{{comment.id}}" role="tabpanel"
+                         aria-labelledby="list-information-list{{comment.id}}">
+                        <p>Nickname: {{comment.nickname}}</p>
+                        <p>Comment ID: {{comment.id}}</p>
+                        <p>Email: {{comment.email}}</p>
+                        <p>FingerPrint: {{comment.finger_print}}</p>
+                    </div>
+                    <div class="overflow-auto tab-pane fade" id="list-control{{comment.id}}" role="tabpanel"
+                         aria-labelledby="list-control-list{{comment.id}}">
+                        <a href="/raw/comment/{{comment.id}}" class="btn btn-primary">Raw Content</a>
+                        <a href="/comment/remove/{{comment.id}}" class="btn btn-primary">Delete Content</a>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <br/>
-    {% endfor %}
+        <br/>
+        {% endfor %}
+    {% endif %}
 </div>
 {% endblock %}
 

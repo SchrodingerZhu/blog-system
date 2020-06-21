@@ -18,8 +18,12 @@
             </div>
             <div class="card-body">
                 <h5 class="card-title">{{post.title}}</h5>
-                <p class="card-text"> publish: {{post.public_date.to_string()}} </p>
-                <p class="card-text"> update: {{post.update_date.to_string()}} </p>
+                <div class="row p-2">
+                    <p class="text-muted rounded col"><i class="material-icons">book</i>
+                        Public Date: {{post.public_date.to_string() }}</p>
+                    <p class="text-muted rounded col"><i class="material-icons">update</i>
+                        Update Date: {{post.update_date.to_string() }}</p>
+                </div>
                 <pre><code class="language-markdown">{{post.get_abstract()}}
 more ...
             </code></pre>
@@ -37,12 +41,12 @@ more ...
 <ul class="pagination">
     {% if page_number > 0 %}
     <li class="page-item">
-        <button class="page-link" onclick="prev()"> Previous Page</button>
+        <button class="btn btn-flat" onclick="prev()"> Previous Page</button>
     </li>
     {% endif %}
     {% if posts.len() > 0 %}
     <li class="page-item">
-        <button class="page-link" onclick="next()"> Next Page</button>
+        <button class="btn btn-flat" onclick="next()"> Next Page</button>
     </li>
     {% endif %}
 </ul>
