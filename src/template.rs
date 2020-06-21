@@ -1,6 +1,7 @@
 use askama::*;
 
 use crate::model::{Comment, Page, Post};
+use chrono::Datelike;
 
 #[derive(Template)]
 #[template(path = "post.html")]
@@ -84,3 +85,11 @@ pub struct IndexTemplate<'a> {
     pub pages: &'a [Page],
     pub important_pages: &'a [(String, i32, String)],
 }
+
+pub trait BaseTemplate {
+    fn get_year(&self) -> i32 {
+        chrono::Utc::today().year()
+    }
+}
+
+impl<T : Template> BaseTemplate for T {}

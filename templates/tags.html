@@ -61,6 +61,7 @@
 
 {% endblock %}
 {% block body %}
+<div class="extend-height">
 <div id="chartdiv"></div>
 <ul class="list-group">
     {% for tag in tags %}
@@ -71,6 +72,7 @@
     </a>
     {% endfor %}
 </ul>
+</div>
 {% endblock %}
 
 {% block appendix %}

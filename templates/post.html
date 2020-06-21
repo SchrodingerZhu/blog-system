@@ -15,6 +15,9 @@
         },
         svg: {
             fontCache: 'global'
+        },
+        "HTML-CSS": {
+            linebreaks: { automatic: true, width: "container" }
         }
     };
 </script>
@@ -32,9 +35,11 @@
 <h1> {{ post.title }} </h1>
 <p> public date: {{ post.public_date.to_string() }}</p>
 <p> update date: {{ post.update_date.to_string() }}</p>
-<div class="text-content shadow-lg p-3 mb-5 bg-light rounded">
+<div class="text-content shadow-lg p-3 mb-5 bg-light rounded extend-height">
     {# The following part is the markdown rendered result #}
-    {{ post.render_content()|safe }}
+    <div class="md-content">
+        {{ post.render_content()|safe }}
+    </div>
     <a href="/raw/post/{{post.id}}" class="btn btn-primary"> Raw Content </a>
 </div>
 <div class="tag-area" data-toggle="buttons">

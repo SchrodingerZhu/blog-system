@@ -9,20 +9,17 @@
 {% endblock %}
 
 {% block body %}
+<div class="extend-height">
+    <h3>Please Clear Sign the Following Json:</h3>
 
-<h3>Please Clear Sign the Following Json:</h3>
+    <pre><code class="language-json">{{json}}</code></pre>
 
-<pre>
-<code>
-{{json}}
-</code>
-</pre>
-
-<form action="/comment/remove" method="post">
-    <div class="form-group">
-        <label for="signed_content">Signed Content</label>
-        <textarea class="form-control" id="signed_content" name="signed_content"></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+    <form action="/comment/remove" method="post">
+        <div class="form-group">
+            <label for="signed_content">Signed Content</label>
+            <textarea class="form-control" id="signed_content" name="signed_content"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
 {% endblock %}

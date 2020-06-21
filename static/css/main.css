@@ -28,6 +28,14 @@ html, body {
     height: 100%;
 }
 
+.container-md {
+    height: 100%;
+}
+
+.container-fluid {
+    height: 100%;
+}
+
 
 .btn-group-nav {
     padding-top: 10%;
@@ -35,4 +43,29 @@ html, body {
 
 .btn-nav {
     background: rgba(0, 0, 0, 0.0);
+}
+
+.extend-height {
+    min-height: 50%;
+}
+
+.cc-button:hover {
+    text-decoration: none;
+}
+
+.md-content img {
+    width: 100%;
+    height: auto;
+}
+
+.md-content .svg-scroll {
+    overflow-x: scroll;
+}
+
+.md-content pre code {
+    overflow-x: scroll;
+}
+
+.md-content .MathJax {
+    overflow-x: scroll;
 }

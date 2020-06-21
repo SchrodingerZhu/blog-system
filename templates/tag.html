@@ -8,33 +8,36 @@
 {% endblock %}
 {% block body %}
 <h1> Tag: {{name}} | Page {{page_number}} </h1>
-{% if posts.len() > 0 %}
-<div class="columns">
-    {% for post in posts %}
-    <div class="card">
-        <div class="card-header">
-            Post #{{post.id}}
-        </div>
-        <div class="card-body">
-            <h5 class="card-title">{{post.title}}</h5>
-            <p class="card-text"> publish: {{post.public_date.to_string()}} </p>
-            <p class="card-text"> update:  {{post.update_date.to_string()}} </p>
-            <pre><code class="language-markdown">{{post.get_abstract()}}
+<div class="extend-height">
+    {% if posts.len() > 0 %}
+    <div class="columns">
+        {% for post in posts %}
+        <div class="card">
+            <div class="card-header">
+                Post #{{post.id}}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{post.title}}</h5>
+                <p class="card-text"> publish: {{post.public_date.to_string()}} </p>
+                <p class="card-text"> update: {{post.update_date.to_string()}} </p>
+                <pre><code class="language-markdown">{{post.get_abstract()}}
 more ...
             </code></pre>
-            <a href="/post/{{post.translate_title()}}.html" class="btn btn-primary">Read More</a>
-            <a href="/raw/post/{{post.id}}" class="btn btn-success">Raw Content</a>
+                <a href="/post/{{post.translate_title()}}.html" class="btn btn-primary">Read More</a>
+                <a href="/raw/post/{{post.id}}" class="btn btn-success">Raw Content</a>
+            </div>
         </div>
+        <br/>
+        {% endfor %}
     </div>
-    <br/>
-    {% endfor %}
+    {% else -%}
+    <span> NO MORE~ </span>
+    {% endif -%}
 </div>
-{% else -%}
-<span> NO MORE~ </span>
-{% endif -%}
 <ul class="pagination">
     {% if page_number > 0 %}
-    <li class="page-item"><a class="page-link" href="/tag/{{translated_name}}/{{page_number - 1}}"> Previous Page </a></li>
+    <li class="page-item"><a class="page-link" href="/tag/{{translated_name}}/{{page_number - 1}}"> Previous Page </a>
+    </li>
     {% endif %}
     {% if posts.len() > 0 %}
     <li class="page-item"><a class="page-link" href="/tag/{{translated_name}}/{{page_number + 1}}"> Next Page </a></li>
