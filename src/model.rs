@@ -80,6 +80,17 @@ pub struct NewPost<'a> {
     pub content: Option<&'a str>,
 }
 
+
+#[derive(Insertable, Debug, Clone, diesel::AsChangeset)]
+#[table_name = "posts"]
+pub struct NewPostRaw {
+    pub title: Option<String>,
+    pub public_date: Option<chrono::NaiveDateTime>,
+    pub update_date: Option<chrono::NaiveDateTime>,
+    pub tags: Option<Vec<String>>,
+    pub content: Option<String>,
+}
+
 #[derive(Insertable, Debug, Clone, diesel::AsChangeset)]
 #[table_name = "pages"]
 pub struct NewPage<'a> {
@@ -87,6 +98,15 @@ pub struct NewPage<'a> {
     pub content: Option<&'a str>,
     pub important: Option<bool>,
     pub description: Option<&'a str>
+}
+
+#[derive(Insertable, Debug, Clone, diesel::AsChangeset)]
+#[table_name = "pages"]
+pub struct NewPageRaw {
+    pub title: Option<String>,
+    pub content: Option<String>,
+    pub important: Option<bool>,
+    pub description: Option<String>
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable, serde::Serialize, Debug, serde::Deserialize)]
@@ -113,14 +133,14 @@ pub struct Comment {
 
 #[derive(Insertable)]
 #[table_name = "comments"]
-pub struct NewComment<'a> {
+pub struct NewComment {
     pub post_id: i32,
-    pub nickname: &'a str,
-    pub email: &'a str,
-    pub content: &'a str,
-    pub signature: &'a str,
-    pub finger_print: &'a str,
-    pub sha3_512: &'a [u8],
+    pub nickname: String,
+    pub email:String,
+    pub content:String,
+    pub signature:String,
+    pub finger_print:String,
+    pub sha3_512: Vec<u8>,
 }
 
 impl Comment {
@@ -166,6 +186,7 @@ pub const POST_COLUMNS: PostColumns = (
 );
 
 impl Post {
+    #[inline(always)]
     pub fn list(connection: &Conn, search: &str, page_number: Option<i64>) -> tide::Result<Vec<Self>> {
         use diesel::RunQueryDsl;
         use diesel::QueryDsl;

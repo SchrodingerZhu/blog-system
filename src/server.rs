@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use askama::Template;
-use chrono::FixedOffset;
+use chrono::{FixedOffset, NaiveDateTime};
 use diesel::prelude::*;
 use tide::{Redirect, Request, Response, Status, StatusCode};
 
@@ -10,13 +10,13 @@ use crate::crypto::Packet;
 use crate::model::{Comment, NewComment, Page, Post, POST_COLUMNS};
 use crate::ServerState;
 use crate::template::{PostsTemplate, Tag, TagTemplate};
-
+use sitemap::structs::UrlEntry;
+use async_diesel::*;
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 
 pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Response> {
     use crate::schema::posts::dsl::*;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let pool = &request.state().pool;
     let page_number: i64 = {
         let pat = request.url()
             .path()
@@ -29,7 +29,8 @@ pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Re
         .order_by(id)
         .limit(20)
         .offset(page_number * 20)
-        .load::<Post>(&conn)
+        .load_async::<Post>(&pool)
+        .await
         .status(StatusCode::InternalServerError)?;
 
     let posts_template = PostsTemplate {
@@ -74,23 +75,26 @@ pub async fn error_handle(result: tide::Result<Response>) -> tide::Result<tide::
 
 pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl as p;
+    use crate::schema::comments::dsl as c;
     use crate::schema::lower;
     let path = request.url().path().trim_start_matches("/");
     if path.contains('/') || !path.ends_with(".html") {
         return Ok(Response::new(StatusCode::NotFound));
     }
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let name = path.trim_end_matches(".html");
     let name = percent_encoding::percent_decode_str(name).decode_utf8()?
         .replace("-", " ");
     let post: Post = p::posts
         .select(POST_COLUMNS)
         .filter(lower(p::title).eq(name.to_ascii_lowercase()))
-        .first::<Post>(&conn)
+        .first_async::<Post>(&conn)
+        .await
         .status(StatusCode::NotFound)?;
-    let all_comments = Comment::belonging_to(&post)
-        .load::<Comment>(&conn)?;
+    let pid = post.id;
+    let all_comments = c::comments
+        .filter(c::post_id.eq(pid))
+        .load_async::<Comment>(&conn).await?;
     let template = crate::template::PostTemplate {
         post,
         comments: all_comments,
@@ -107,14 +111,14 @@ pub async fn serve_page(request: Request<ServerState>) -> tide::Result<Response>
     if path.contains('/') || !path.ends_with(".html") {
         return Ok(Response::new(StatusCode::NotFound));
     }
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let name = path.trim_end_matches(".html");
     let name = percent_encoding::percent_decode_str(name).decode_utf8()?
         .replace("-", " ");
     let page = p::pages
         .filter(lower(p::title).eq(name.to_ascii_lowercase()))
-        .first::<Page>(&conn)
+        .first_async::<Page>(&conn)
+        .await
         .status(StatusCode::NotFound)?;
     let template = crate::template::PageTemplate {
         blog_name: request.state().blog_name.as_str(),
@@ -136,16 +140,15 @@ pub struct CommentForm {
 pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl as p;
     use crate::schema::comments::dsl as c;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
     let form: CommentForm = request.body_form()
         .await?;
+    let conn = &request.state().pool;
     if form.comment_nickname.is_empty() ||
         !regex::Regex::new(EMAIL_REGEX)?.is_match(form.comment_email.as_str()) {
         return Err(tide::Error::from_str(StatusCode::BadRequest, "invalid field"));
     }
     match diesel::dsl::select(diesel::dsl::exists(p::posts.filter(p::id.eq(form.post_id))))
-        .get_result(&conn) {
+        .get_result_async(&conn).await {
         Ok(true) => (),
         _ => {
             return Err(tide::Error::from_str(StatusCode::BadRequest, "invalid post id"));
@@ -158,18 +161,20 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
         .to_vec();
     let comment = NewComment {
         post_id: form.post_id,
-        nickname: form.comment_nickname.as_str(),
-        email: form.comment_email.as_str(),
-        content: real_content.as_str(),
-        signature: form.comment_content.as_str(),
-        finger_print: finger_print.as_str(),
-        sha3_512: &hash,
+        nickname: form.comment_nickname,
+        email: form.comment_email,
+        content: real_content,
+        signature: form.comment_content,
+        finger_print,
+        sha3_512: hash,
     };
     diesel::insert_into(c::comments)
-        .values(&comment)
-        .execute(&conn)?;
+        .values(comment)
+        .execute_async(&conn)
+        .await?;
     let title: String = p::posts.select(p::title).filter(p::id.eq(form.post_id))
-        .first(&conn)
+        .first_async(&conn)
+        .await
         .status(StatusCode::NotFound)?;
     Ok(Redirect::new(format!("/post/{}.html", title.replace(" ", "-")
         .to_ascii_lowercase())).into())
@@ -177,8 +182,6 @@ pub async fn handle_comment(mut request: Request<ServerState>) -> tide::Result<R
 
 pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Response> {
     use crate::schema::posts::dsl::*;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
     let url = request.url().path().trim_start_matches("/");
     let url_split = url.split("/").collect::<Vec<&str>>();
     if url_split.len() != 1 && url_split.len() != 2 {
@@ -187,7 +190,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
     let page_number = if url_split.len() == 2 {
         url_split[1].parse()?
     } else { 0 };
-
+    let conn = &request.state().pool;
     let old_tag = percent_encoding::percent_decode_str(url_split[0])
         .decode_utf8()?
         .to_ascii_lowercase();
@@ -198,7 +201,7 @@ pub async fn serve_tag(request: Request<ServerState>) -> tide::Result<tide::Resp
         .filter(tags.contains(vec![real_tag.as_str()]))
         .limit(20)
         .offset(page_number * 20)
-        .load::<Post>(&conn)
+        .load::<Post>(&conn.get()?)
         .status(StatusCode::InternalServerError)?;
 
     let tag_template = TagTemplate {
@@ -218,11 +221,11 @@ pub async fn serve_comment_raw(request: Request<ServerState>) -> tide::Result<St
     use crate::schema::comments::dsl::*;
     let cid: i32 = request.url().path().trim_start_matches("/").parse()
         .status(StatusCode::BadRequest)?;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let target: String = comments.select(signature)
         .filter(id.eq(cid))
-        .first(&conn)
+        .first_async(&conn)
+        .await
         .status(StatusCode::NotFound)?;
     Ok(target)
 }
@@ -231,11 +234,11 @@ pub async fn serve_post_raw(request: Request<ServerState>) -> tide::Result<Strin
     use crate::schema::posts::dsl::*;
     let cid: i32 = request.url().path().trim_start_matches("/").parse()
         .status(StatusCode::BadRequest)?;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let target: String = posts.select(content)
         .filter(id.eq(cid))
-        .first(&conn)
+        .first_async(&conn)
+        .await
         .status(StatusCode::NotFound)?;
 
     Ok(target)
@@ -245,11 +248,11 @@ pub async fn serve_page_raw(request: Request<ServerState>) -> tide::Result<Strin
     use crate::schema::pages::dsl::*;
     let cid: i32 = request.url().path().trim_start_matches("/").parse()
         .status(StatusCode::BadRequest)?;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let target: String = pages.select(content)
         .filter(id.eq(cid))
-        .first(&conn)
+        .first_async(&conn)
+        .await
         .status(StatusCode::NotFound)?;
 
     Ok(target)
@@ -257,10 +260,10 @@ pub async fn serve_page_raw(request: Request<ServerState>) -> tide::Result<Strin
 
 pub async fn serve_tags(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::posts::dsl::*;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let all_tags: Vec<String> = posts.select(tags)
-        .load::<Vec<String>>(&conn)
+        .load_async::<Vec<String>>(&conn)
+        .await
         .status(StatusCode::InternalServerError)?
         .into_iter()
         .flatten()
@@ -293,9 +296,8 @@ struct SearchForm {
 
 pub async fn handle_search(mut request: Request<ServerState>) -> tide::Result<Response> {
     let form: SearchForm = request.body_form().await?;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
-    let all_posts = crate::model::Post::list(&conn,
+    let conn = &request.state().pool;
+    let all_posts = crate::model::Post::list(&conn.get()?,
                                              form.search.as_str(),
                                              Some(form.page_number))?;
     let template = crate::template::PostsSearch {
@@ -320,10 +322,9 @@ pub async fn remove_comment(request: Request<ServerState>) -> tide::Result<Respo
     use crate::schema::comments::dsl::*;
     let cid: i32 = request.url().path().trim_start_matches("/").parse()
         .status(StatusCode::BadRequest)?;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     match diesel::dsl::select(diesel::dsl::exists(comments.filter(id.eq(cid))))
-        .get_result(&conn) {
+        .get_result_async(&conn).await {
         Ok(true) => (),
         _ => {
             return Err(tide::Error::from_str(StatusCode::BadRequest, "invalid post id"));
@@ -363,17 +364,16 @@ pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::R
     if duration.as_secs() > 60 * 5 {
         return Err(tide::Error::from_str(StatusCode::RequestTimeout, "request timeout"));
     }
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     let (cfp, cpost_id): (String, i32) = comments
         .select((finger_print, post_id))
-        .filter(id.eq(remove.id)).first(&conn)?;
+        .filter(id.eq(remove.id)).first_async(&conn).await?;
     if cfp != fp {
         Err(tide::Error::from_str(StatusCode::Unauthorized, "fingerprint does not match"))
     } else {
-        diesel::delete(comments.filter(id.eq(remove.id))).execute(&conn)?;
+        diesel::delete(comments.filter(id.eq(remove.id))).execute_async(&conn).await?;
         let ctitle: String = p::posts.select(p::title).filter(p::id.eq(cpost_id))
-            .first(&conn)?;
+            .first_async(&conn).await?;
         Ok(Redirect::new(format!("/post/{}.html", ctitle.replace(" ", "-")
             .to_ascii_lowercase())).into())
     }
@@ -381,12 +381,12 @@ pub async fn handle_remove_comment(mut request: Request<ServerState>) -> tide::R
 
 pub async fn index(request: Request<ServerState>) -> tide::Result<Response> {
     use crate::schema::pages::dsl::*;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
-    let all_pages = pages.load::<Page>(&conn)?;
+    let conn = &request.state().pool;
+    let all_pages = pages.load_async::<Page>(&conn).await?;
     let important_pages = pages.select((title, id))
         .filter(important)
-        .load::<(String, i32)>(&conn)?
+        .load_async::<(String, i32)>(&conn)
+        .await?
         .into_iter()
         .map(|(x, y)| {
             let z = x.to_ascii_lowercase().replace(" ", "-");
@@ -405,15 +405,13 @@ pub async fn index(request: Request<ServerState>) -> tide::Result<Response> {
 
 pub async fn handle_api(mut request: Request<ServerState>) -> tide::Result<Response> {
     let packet: Packet = crate::utils::simdjson_body(&mut request).await?;
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
     let mut addr = request.state().stamp_keeper.clone();
     let key_pair = &request.state().key_pair;
-    let request: JsonRequest = packet.to_json_request(key_pair,
+    let json_request: JsonRequest = packet.to_json_request(key_pair,
                                                       Some(&mut addr),
     ).await.map_err(|_| tide::Error::from_str(StatusCode::BadRequest, "failed to decode request"))?;
     let mut response = Response::new(StatusCode::Ok);
-    let response_content = request.handle(conn)
+    let response_content = json_request.handle(&request.state().pool)
         .await;
     let response_packet = Packet::from_json_request_tide(response_content,
                                                          key_pair,
@@ -425,12 +423,12 @@ pub async fn handle_api(mut request: Request<ServerState>) -> tide::Result<Respo
 }
 
 pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response> {
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     use crate::schema::posts::dsl::*;
     let all_posts: Vec<Post> = posts
         .select(POST_COLUMNS)
-        .load::<Post>(&conn)
+        .load_async::<Post>(conn)
+        .await
         .status(StatusCode::InternalServerError)?;
     let items: Vec<rss::Item> = all_posts.into_iter()
         .map(|x| rss::ItemBuilder::default()
@@ -465,12 +463,12 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
 
 
 pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response> {
-    let conn = request
-        .state().pool.get().status(StatusCode::InternalServerError)?;
+    let conn = &request.state().pool;
     use crate::schema::posts::dsl::*;
     let all_posts: Vec<Post> = posts
         .select(POST_COLUMNS)
-        .load::<Post>(&conn)
+        .load_async::<Post>(&conn)
+        .await
         .status(StatusCode::InternalServerError)?;
     let entries: Vec<atom_syndication::Entry> = all_posts.into_iter()
         .map(|x| atom_syndication::ContentBuilder::default()
@@ -520,6 +518,47 @@ pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response
     let mut response = Response::new(StatusCode::Ok);
     response.set_content_type(mime);
     response.set_body(channel.to_string());
+    Ok(
+        response
+    )
+}
+
+pub async fn handle_sitemap(request: Request<ServerState>) -> tide::Result<Response> {
+    use crate::schema::{translate, concat, lower};
+    let conn = &request.state().pool;
+    let posts : Vec<(String, NaiveDateTime)> = {
+        use crate::schema::posts::dsl::*;
+        posts.select((concat(request.state().domain.clone(), "/post/", translate(lower(title), " ", "-"), ".html"), update_date))
+            .load_async(&conn)
+            .await
+            .status(StatusCode::InternalServerError)?
+    };
+    let pages : Vec<(String, bool)> = {
+        use crate::schema::pages::dsl::*;
+        pages.select((concat(request.state().domain.clone(), "/page/", translate(lower(title), " ", "-"), ".html"), important))
+            .load_async(&conn)
+            .await
+            .status(StatusCode::InternalServerError)?
+    };
+    let mut sitemap = Vec::new();
+    let builder = sitemap::writer::SiteMapWriter::new(&mut sitemap);
+    let mut url_set =  builder.start_urlset()?;
+    url_set.url(UrlEntry::builder().loc(request.state().domain.as_str()).priority(1.0).build()?)?;
+    url_set.url(UrlEntry::builder().loc(format!("{}/posts", request.state().domain.as_str())).priority(0.8).build()?)?;
+    url_set.url(UrlEntry::builder().loc(format!("{}/tags", request.state().domain.as_str())).priority(0.8).build()?)?;
+    for i in pages {
+        url_set.url(UrlEntry::builder().loc(i.0).priority(if i.1 {0.7} else {0.6} ).build()?)?;
+    }
+    for i in posts {
+        url_set.url(UrlEntry::builder().loc(i.0).priority(0.5)
+            .lastmod(chrono::DateTime::<FixedOffset>::from_utc(i.1
+                                                               , chrono::FixedOffset::east(0))).build()?)?;
+    }
+
+    let mime = http_types::mime::Mime::from_str("application/xml")?;
+    let mut response = Response::new(StatusCode::Ok);
+    response.set_content_type(mime);
+    response.set_body(sitemap);
     Ok(
         response
     )

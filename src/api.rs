@@ -1,9 +1,10 @@
+use async_diesel::*;
 use chrono::Utc;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::{ExpressionMethods, QueryDsl};
 
 use crate::api::JsonResponse::*;
-use crate::Conn;
-use crate::model::{Comment, NewPage, NewPost, Page, Post, POST_COLUMNS};
+use crate::ConnPool;
+use crate::model::{Comment, NewPageRaw, Post, Page, POST_COLUMNS, NewPostRaw};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(tag = "request_type", content = "request_body")]
@@ -26,7 +27,7 @@ pub enum JsonRequest {
         title: Option<String>,
         content: Option<String>,
         important: Option<bool>,
-        description: Option<String>
+        description: Option<String>,
     },
     PageCreate {
         title: String,
@@ -79,81 +80,88 @@ impl<T: ToString> From<T> for JsonResponse {
 }
 
 impl JsonRequest {
-    pub async fn handle(&self, conn: Conn) -> JsonResponse {
+    pub async fn handle(self, conn: &ConnPool) -> JsonResponse {
         use JsonRequest::*;
         let conn = &conn;
         match self {
             PostUpdate { id, title, tags, content } => {
                 use crate::schema::posts::dsl as p;
                 let time = Utc::now().naive_local();
-                let change_set = NewPost {
-                    title: title.as_ref().map(|x| x.as_str()),
-                    update_date: Some(&time),
+                let change_set = NewPostRaw {
+                    title,
+                    update_date: Some(time),
                     public_date: None,
-                    tags: tags.as_ref().map(|x| x.as_slice()),
-                    content: content.as_ref().map(|x| x.as_str()),
+                    tags,
+                    content,
                 };
-                diesel::update(p::posts.filter(p::id.eq(*id)))
+                diesel::update(p::posts.filter(p::id.eq(id)))
                     .set(change_set)
-                    .execute(conn)
+                    .execute_async(conn)
+                    .await
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
             }
             PostSearch(search) => {
-                Post::list(conn, search.as_str(), None)
-                    .map(|x| PostSearchList(x))
-                    .unwrap_or_else(Into::into)
+                conn.get().map(|x|
+                    Post::list(&x, search.as_str(), None)
+                        .map(|x| PostSearchList(x))
+                        .unwrap_or_else(Into::into)
+                ).unwrap_or_else(Into::into)
             }
-            PageCreate { title, content, important , description } => {
+            PageCreate { title, content, important, description } => {
                 use crate::schema::pages::dsl as p;
                 diesel::insert_into(p::pages)
-                    .values(NewPage {
+                    .values(NewPageRaw {
                         title: Some(title),
                         content: Some(content),
-                        important: Some(*important),
-                        description: Some(description)
+                        important: Some(important),
+                        description: Some(description),
                     })
-                    .execute(conn)
+                    .execute_async(conn)
+                    .await
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
             }
             PageUpdate { id, title, content, important, description } => {
                 use crate::schema::pages::dsl as p;
-                let change_set = NewPage {
-                    title: title.as_ref().map(|x| x.as_str()),
-                    content: content.as_ref().map(|x| x.as_str()),
-                    important: important.clone(),
-                    description: description.as_ref().map(|x| x.as_str()),
+                let change_set = NewPageRaw {
+                    title,
+                    content,
+                    important,
+                    description,
                 };
-                diesel::update(p::pages.filter(p::id.eq(*id)))
+                diesel::update(p::pages.filter(p::id.eq(id)))
                     .set(change_set)
-                    .execute(conn)
+                    .execute_async(conn)
+                    .await
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
             }
             PostCreate { title, content, tag } => {
                 use crate::schema::posts::dsl as p;
                 let time = Utc::now().naive_local();
-                let mut tag : Vec<String> = tag.iter()
+                let mut tag: Vec<String> = tag.iter()
                     .map(|x| x.trim().to_ascii_lowercase()).collect();
                 tag.sort();
                 tag.dedup_by(|x, y| x == y);
                 diesel::insert_into(p::posts)
-                    .values(NewPost {
+                    .values(NewPostRaw {
                         title: Some(title),
-                        public_date: Some(&time),
-                        update_date: Some(&time),
-                        tags: Some(&tag),
+                        public_date: Some(time),
+                        update_date: Some(time),
+                        tags: Some(tag),
                         content: Some(content),
                     })
-                    .execute(conn)
+                    .execute_async(conn)
+                    .await
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
             }
             PostComments(post_id) => {
                 use crate::schema::comments::dsl as c;
-                c::comments.filter(c::post_id.eq(*post_id))
-                    .load(conn)
+                c::comments.filter(c::post_id.eq(post_id))
+                    .load_async(conn)
+                    .await
                     .map(|x| CommentList(x))
                     .unwrap_or_else(Into::into)
             }
@@ -161,7 +169,8 @@ impl JsonRequest {
                 match list_type {
                     ModelType::Comment => {
                         use crate::schema::comments::dsl as c;
-                        c::comments.load(conn)
+                        c::comments.load_async(conn)
+                            .await
                             .map(|x| CommentList(x))
                             .unwrap_or_else(Into::into)
                     }
@@ -169,7 +178,8 @@ impl JsonRequest {
                         use crate::schema::posts::dsl as p;
                         p::posts
                             .select((p::id, p::title, p::public_date, p::update_date))
-                            .load(conn)
+                            .load_async(conn)
+                            .await
                             .map(|x| PostList(x))
                             .unwrap_or_else(Into::into)
                     }
@@ -177,7 +187,8 @@ impl JsonRequest {
                         use crate::schema::pages::dsl as p;
                         p::pages
                             .select((p::id, p::title))
-                            .load(conn)
+                            .load_async(conn)
+                            .await
                             .map(|x| PageList(x))
                             .unwrap_or_else(Into::into)
                     }
@@ -188,8 +199,9 @@ impl JsonRequest {
                     ModelType::Comment => {
                         use crate::schema::comments::dsl as c;
                         c::comments
-                            .filter(c::id.eq(*id))
-                            .first(conn)
+                            .filter(c::id.eq(id))
+                            .first_async(conn)
+                            .await
                             .map(|x| CommentInfo(x))
                             .unwrap_or_else(Into::into)
                     }
@@ -197,16 +209,18 @@ impl JsonRequest {
                         use crate::schema::posts::dsl as p;
                         p::posts
                             .select(POST_COLUMNS)
-                            .filter(p::id.eq(*id))
-                            .first(conn)
+                            .filter(p::id.eq(id))
+                            .first_async(conn)
+                            .await
                             .map(|x| PostInfo(x))
                             .unwrap_or_else(Into::into)
                     }
                     ModelType::Page => {
                         use crate::schema::pages::dsl as p;
                         p::pages
-                            .filter(p::id.eq(*id))
-                            .first(conn)
+                            .filter(p::id.eq(id))
+                            .first_async(conn)
+                            .await
                             .map(|x| PageInfo(x))
                             .unwrap_or_else(Into::into)
                     }
@@ -217,24 +231,27 @@ impl JsonRequest {
                     ModelType::Comment => {
                         use crate::schema::comments::dsl as c;
                         diesel::delete(c::comments
-                            .filter(c::id.eq(*id)))
-                            .execute(conn)
+                            .filter(c::id.eq(id)))
+                            .execute_async(conn)
+                            .await
                             .map(|s| Success(s))
                             .unwrap_or_else(Into::into)
                     }
                     ModelType::Post => {
                         use crate::schema::posts::dsl as p;
                         diesel::delete(p::posts
-                            .filter(p::id.eq(*id)))
-                            .execute(conn)
+                            .filter(p::id.eq(id)))
+                            .execute_async(conn)
+                            .await
                             .map(|s| Success(s))
                             .unwrap_or_else(Into::into)
                     }
                     ModelType::Page => {
                         use crate::schema::pages::dsl as p;
                         diesel::delete(p::pages
-                            .filter(p::id.eq(*id)))
-                            .execute(conn)
+                            .filter(p::id.eq(id)))
+                            .execute_async(conn)
+                            .await
                             .map(|s| Success(s))
                             .unwrap_or_else(Into::into)
                     }

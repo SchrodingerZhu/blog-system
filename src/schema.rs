@@ -40,3 +40,9 @@ diesel::allow_tables_to_appear_in_same_query!(
 );
 
 diesel::sql_function!(fn lower(x: diesel::types::Varchar) -> diesel::types::Varchar);
+diesel::sql_function!(fn translate(x: diesel::types::Varchar, y: diesel::types::Varchar, z: diesel::types::Varchar) -> diesel::types::Varchar);
+diesel::sql_function!(fn
+    concat(a: diesel::types::Varchar,
+           b: diesel::types::Varchar,
+           c: diesel::types::Varchar,
+           d: diesel::types::Varchar) -> diesel::types::Varchar);

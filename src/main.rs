@@ -87,6 +87,7 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/comment/remove").post(handle_remove_comment);
     http_server.at("/rss.xml").get(handle_rss);
     http_server.at("/atom.xml").get(handle_atom);
+    http_server.at("/sitemap.xml").get(handle_sitemap);
     http_server.at("/api").post(handle_api);
     http_server.at("/").get(index);
     http_server.middleware(tide::After(error_handle));

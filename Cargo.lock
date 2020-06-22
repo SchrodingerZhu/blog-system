@@ -169,6 +169,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-diesel"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7f52ecdcb90420e347abe19f2b76a8b750bd32ea735aaa6a012a10fb96b1afe"
+dependencies = [
+ "async-std",
+ "async-trait",
+ "diesel",
+ "futures 0.3.5",
+ "r2d2",
+]
+
+[[package]]
 name = "async-h1"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -460,6 +473,15 @@ dependencies = [
  "num-traits",
  "serde",
  "time 0.1.43",
+]
+
+[[package]]
+name = "chrono_utils"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f69ed74e2117892a1a4e05d31f6612178e8e827bfbd83bbf8ca8c1bcfbda710"
+dependencies = [
+ "chrono",
 ]
 
 [[package]]
@@ -2386,6 +2408,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7"
 
 [[package]]
+name = "sitemap"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c95c7e58b4461fec85bdd58f271bcd416ecc4d630c3ac280b60efa3421016b7"
+dependencies = [
+ "chrono",
+ "chrono_utils",
+ "url",
+ "xml-rs",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3006,6 +3040,7 @@ dependencies = [
  "ammonia",
  "anyhow",
  "askama",
+ "async-diesel",
  "async-std",
  "async-trait",
  "atom_syndication",
@@ -3032,6 +3067,7 @@ dependencies = [
  "serde",
  "serde_json",
  "simd-json",
+ "sitemap",
  "snmalloc-rs",
  "structopt",
  "surf",
@@ -3261,6 +3297,12 @@ dependencies = [
  "quote 1.0.7",
  "syn 1.0.31",
 ]
+
+[[package]]
+name = "xml-rs"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b07db065a5cf61a7e4ba64f29e67db906fb1787316516c4e6e5ff0fea1efcd8a"
 
 [[package]]
 name = "xml5ever"
