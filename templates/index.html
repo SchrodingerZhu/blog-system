@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Personal Blog: {{blog_name}}. Share thoughts and highlights. Seek happiness and creativeness!">
     <link rel="icon"
           type="image/png"
           href="/static/img/icon.png">
@@ -120,7 +121,7 @@
                                     {% for page in pages %}
                                     <div class="shadow-none p-3 mb-5 bg-light rounded" id="page-{{page.id}}">
                                         <h4>{{page.title}}</h4>
-                                        <pre><code class="language-markdown">{{page.description}}</code></pre>
+                                        <pre class="p-2" style="overflow-wrap: break-word; white-space:pre-wrap;">{{page.description}}</pre>
                                         <a class="btn btn-primary" href="/page/{{page.translate_title()}}.html">View More</a>
                                         <a class="btn btn-primary" href="/raw/page/{{page.id}}">Raw Content</a>
                                     </div>

@@ -94,6 +94,7 @@ pub async fn serve_post(request: Request<ServerState>) -> tide::Result<Response>
     let template = crate::template::PostTemplate {
         post,
         comments: all_comments,
+        blog_name: request.state().blog_name.as_str()
     };
     let page = template.render()?;
     Ok(normal_page(page))

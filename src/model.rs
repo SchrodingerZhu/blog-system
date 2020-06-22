@@ -21,6 +21,10 @@ impl Post {
         buffer
     }
 
+    pub fn tags_to_keywords(&self) -> String {
+        self.tags.join(", ")
+    }
+
     pub fn get_abstract(&self) -> String {
         use pulldown_cmark::*;
         let mut abstract_content = String::new();

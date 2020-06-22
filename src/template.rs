@@ -5,9 +5,10 @@ use chrono::Datelike;
 
 #[derive(Template)]
 #[template(path = "post.html")]
-pub struct PostTemplate {
+pub struct PostTemplate<'a> {
     pub post: Post,
     pub comments: Vec<Comment>,
+    pub blog_name: &'a str,
 }
 
 #[derive(Template)]
