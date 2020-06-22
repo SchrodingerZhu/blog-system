@@ -49,6 +49,7 @@ atom_syndication = { version  = "0.9", features = ["with-serde"] }
 diesel_full_text_search = { git = "https://github.com/SchrodingerZhu/diesel_full_text_search" }
 sitemap = { git = "https://github.com/SchrodingerZhu/rust-sitemap" }
 async-diesel = "0.1.0"
+tide-compress = "0.3.0"
 [profile.release]
 opt-level = 3
 lto = "thin"

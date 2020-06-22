@@ -4,8 +4,7 @@
 {% block head %}
 <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
-<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js" async></script>
 {% endblock %}
 
 {% block body %}
@@ -22,4 +21,8 @@
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 </div>
+{% endblock %}
+
+{% block appendix %}
+    <script type="text/javascript">hljs.initHighlightingOnLoad();</script>
 {% endblock %}

@@ -91,6 +91,7 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/api").post(handle_api);
     http_server.at("/").get(index);
     http_server.middleware(tide::After(error_handle));
+    http_server.middleware(tide_compress::CompressMiddleware::new());
     http_server.listen(format!("{}:{}", address.as_ref(), port).as_str())
         .await
         .map_err(Into::into)

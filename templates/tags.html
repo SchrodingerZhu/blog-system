@@ -8,14 +8,30 @@
         height: 600px;
     }
 </style>
+{% endblock %}
+{% block body %}
+<div class="extend-height">
+<div id="chartdiv"></div>
+<ul class="list-group">
+    {% for tag in tags %}
+    <a href="/tag/{{tag.translate_name()}}"
+       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        {{tag.tag}}
+        <span class="badge badge-primary badge-pill">{{tag.count}}</span>
+    </a>
+    {% endfor %}
+</ul>
+</div>
+{% endblock %}
 
-
+{% block appendix %}
+<script>
+    document.getElementById("nav-tags").classList.add("active");
+</script>
 <script src="https://www.amcharts.com/lib/4/core.js"></script>
 <script src="https://www.amcharts.com/lib/4/charts.js"></script>
 <script src="https://www.amcharts.com/lib/4/plugins/wordCloud.js"></script>
 <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
-
-
 <script>
     am4core.ready(function () {
 
@@ -58,26 +74,5 @@
         title.fontWeight = "800";
 
     }); // end am4core.ready()
-</script>
-
-{% endblock %}
-{% block body %}
-<div class="extend-height">
-<div id="chartdiv"></div>
-<ul class="list-group">
-    {% for tag in tags %}
-    <a href="/tag/{{tag.translate_name()}}"
-       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-        {{tag.tag}}
-        <span class="badge badge-primary badge-pill">{{tag.count}}</span>
-    </a>
-    {% endfor %}
-</ul>
-</div>
-{% endblock %}
-
-{% block appendix %}
-<script>
-    document.getElementById("nav-tags").classList.add("active");
 </script>
 {% endblock %}
