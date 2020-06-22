@@ -554,7 +554,7 @@ pub async fn handle_sitemap(request: Request<ServerState>) -> tide::Result<Respo
             .lastmod(chrono::DateTime::<FixedOffset>::from_utc(i.1
                                                                , chrono::FixedOffset::east(0))).build()?)?;
     }
-
+    url_set.end()?;
     let mime = http_types::mime::Mime::from_str("application/xml")?;
     let mut response = Response::new(StatusCode::Ok);
     response.set_content_type(mime);
