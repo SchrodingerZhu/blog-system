@@ -2872,12 +2872,10 @@ dependencies = [
 [[package]]
 name = "tide-compress"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc39637b64d388cdb2427639881d2548534438cbe530de1843fd349ba4ecc002"
+source = "git+https://github.com/SchrodingerZhu/tide-compress#ecd88d364cd2f73ad19157e8d0817ba2c102599c"
 dependencies = [
  "async-compression",
  "futures-util",
- "http-types",
  "regex",
  "tide",
 ]
