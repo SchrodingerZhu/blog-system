@@ -22,7 +22,47 @@ impl Post {
     }
 
     pub fn get_abstract(&self) -> String {
-        self.content.chars().take(256).collect()
+        use pulldown_cmark::*;
+        let mut abstract_content = String::new();
+        let parser = pulldown_cmark::Parser::new(self.content.as_str());
+        let mut indent = 0;
+        let mut status = 0;
+        'outer: for i in parser {
+            match i {
+                Event::Text(text) => {
+                    for i in text.chars() {
+                        if abstract_content.len() >= 256 && status == 0 {
+                            break 'outer;
+                        }
+                        abstract_content.push(i);
+                        status = match (status, i) {
+                            (0, '$') => 1,
+                            (1, '$') => 2,
+                            (1,  _ ) => 5,
+                            (2, '$') => 3,
+                            (2,  _ ) => 0,
+                            (3, '$') => 0,
+                            (5, '$') => 0,
+                            (_,  _ )   => status,
+                        }
+                    }
+                }
+                Event::Start(Tag::Item) => {
+                    indent += 1;
+                    abstract_content.extend(" ".repeat(indent).chars());
+                    abstract_content.push_str("- ");
+                }
+                Event::End(Tag::Item) => {
+                    indent -= 1;
+                    abstract_content.push('\n');
+                }
+                Event::HardBreak | Event::SoftBreak  => abstract_content.push('\n'),
+                Event::End(Tag::Heading(..))  | Event::End(Tag::Paragraph) => abstract_content.push('\n'),
+                _ => continue
+            }
+        }
+        abstract_content.extend("...".chars());
+        abstract_content
     }
 }
 
@@ -42,6 +82,7 @@ pub struct NewPage<'a> {
     pub title: Option<&'a str>,
     pub content: Option<&'a str>,
     pub important: Option<bool>,
+    pub description: Option<&'a str>
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable, serde::Serialize, Debug, serde::Deserialize)]
@@ -50,12 +91,7 @@ pub struct Page {
     pub title: String,
     pub content: String,
     pub important: bool,
-}
-
-impl Page {
-    pub fn render_abstract(&self) -> String {
-        self.content.chars().take(128).collect()
-    }
+    pub description: String
 }
 
 #[derive(diesel::Queryable, diesel::Identifiable, diesel::Associations, serde::Serialize, Debug, serde::Deserialize)]

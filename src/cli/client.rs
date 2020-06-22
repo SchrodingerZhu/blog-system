@@ -40,6 +40,8 @@ pub enum SubCommand {
         title: String,
         #[structopt(short, long, help = "Path to the page content file")]
         content_file: PathBuf,
+        #[structopt(short, long, help = "Short desciption of the page")]
+        description: String,
         #[structopt(short = "m", long, help = "Mark the page as an important one")]
         important: bool,
     },
@@ -62,6 +64,8 @@ pub enum SubCommand {
         title: Option<String>,
         #[structopt(short, long, help = "Path to the page content file")]
         content_file: Option<PathBuf>,
+        #[structopt(short, long, help = "Short desciption of the page")]
+        description: String,
         #[structopt(short = "m", long, help = "Whether the page is an important one")]
         important: Option<bool>,
     },
@@ -141,11 +145,12 @@ impl SubCommand {
                     tag: tags.0,
                 }
             }
-            SubCommand::CreatePage { title, content_file, important } => {
+            SubCommand::CreatePage { title, content_file, important, description } => {
                 JsonRequest::PageCreate {
                     title,
                     content: std::fs::read_to_string(content_file.as_path())?,
                     important,
+                    description
                 }
             }
             SubCommand::UpdatePost { id, content_file, tags, title } => {
@@ -159,7 +164,7 @@ impl SubCommand {
                     content,
                 }
             }
-            SubCommand::UpdatePage { id, title, content_file, important } => {
+            SubCommand::UpdatePage { id, title, content_file, important, description } => {
                 let content = if content_file.is_none() { None } else {
                     Some(std::fs::read_to_string(content_file.unwrap().as_path())?)
                 };
@@ -168,6 +173,7 @@ impl SubCommand {
                     title,
                     content,
                     important,
+                    description: Some(description)
                 }
             }
             SubCommand::RemovePost { id } => {

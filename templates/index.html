@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <title>{{ blog_name }} | Home</title>
     <link rel="icon"
           type="image/png"
           href="/static/img/icon.png">
@@ -18,6 +16,8 @@
           href="/rss.xml"
           title="Atom"
           type="application/rss+xml">
+    <title>{{ blog_name }} | Home</title>
+
     <!-- Add Material font (Roboto) and Material icon as needed -->
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i|Roboto+Mono:300,400,700|Roboto+Slab:300,400,700" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -40,6 +40,12 @@
             },
             svg: {
                 fontCache: 'global'
+            },
+            "HTML-CSS": {
+                linebreaks: {automatic: true, width: "container"}
+            },
+            options: {
+                skipHtmlTags: {'[-]': ['code', 'pre']}
             }
         };
     </script>
@@ -114,7 +120,7 @@
                                     {% for page in pages %}
                                     <div class="shadow-none p-3 mb-5 bg-light rounded" id="page-{{page.id}}">
                                         <h4>{{page.title}}</h4>
-                                        <pre><code class="language-markdown">{{page.render_abstract()}}</code></pre>
+                                        <pre><code class="language-markdown">{{page.description}}</code></pre>
                                         <a class="btn btn-primary" href="/page/{{page.translate_title()}}.html">View More</a>
                                         <a class="btn btn-primary" href="/raw/page/{{page.id}}">Raw Content</a>
                                     </div>

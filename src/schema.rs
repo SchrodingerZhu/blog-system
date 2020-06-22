@@ -17,6 +17,7 @@ diesel::table! {
         title -> Varchar,
         content -> Text,
         important -> Bool,
+        description -> Text,
     }
 }
 

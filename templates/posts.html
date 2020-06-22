@@ -1,10 +1,22 @@
 {% extends "base.html" %}
 {% block title %}{{ blog_name }} | Posts{% endblock %}
 {% block head %}
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/highlight.min.js"></script>
-<script type="text/javascript">hljs.initHighlightingOnLoad();</script>
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']]
+        },
+        svg: {
+            fontCache: 'global'
+        },
+        "HTML-CSS": {
+            linebreaks: {automatic: true, width: "container"}
+        },
+        options: {
+            skipHtmlTags: {'[-]': ['code', 'pre']}
+        }
+    };
+</script>
 {% endblock %}
 {% block body %}
 <h1> All Posts | Page {{page_number}} </h1>
@@ -60,9 +72,7 @@
                     <p class="text-muted rounded col"><i class="material-icons">update</i>
                         Update Date: {{post.update_date.to_string() }}</p>
                 </div>
-                <pre><code class="language-markdown">{{post.get_abstract()}}
-more ...
-            </code></pre>
+                <pre class="p-2" style="overflow-wrap: break-word; white-space:pre-wrap;">{{post.get_abstract()}}</pre>
                 <a href="/post/{{post.translate_title()}}.html" class="btn btn-primary">Read More</a>
                 <a href="/raw/post/{{post.id}}" class="btn btn-success">Raw Content</a>
             </div>
@@ -106,5 +116,8 @@ more ...
         form.appendChild(number);
         form.submit();
     }
+</script>
+<script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
 </script>
 {% endblock %}

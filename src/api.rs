@@ -26,10 +26,12 @@ pub enum JsonRequest {
         title: Option<String>,
         content: Option<String>,
         important: Option<bool>,
+        description: Option<String>
     },
     PageCreate {
         title: String,
         content: String,
+        description: String,
         important: bool,
     },
     ListOperation { list_type: ModelType },
@@ -102,24 +104,26 @@ impl JsonRequest {
                     .map(|x| PostSearchList(x))
                     .unwrap_or_else(Into::into)
             }
-            PageCreate { title, content, important } => {
+            PageCreate { title, content, important , description } => {
                 use crate::schema::pages::dsl as p;
                 diesel::insert_into(p::pages)
                     .values(NewPage {
                         title: Some(title),
                         content: Some(content),
                         important: Some(*important),
+                        description: Some(description)
                     })
                     .execute(conn)
                     .map(|s| Success(s))
                     .unwrap_or_else(Into::into)
             }
-            PageUpdate { id, title, content, important } => {
+            PageUpdate { id, title, content, important, description } => {
                 use crate::schema::pages::dsl as p;
                 let change_set = NewPage {
                     title: title.as_ref().map(|x| x.as_str()),
                     content: content.as_ref().map(|x| x.as_str()),
                     important: important.clone(),
+                    description: description.as_ref().map(|x| x.as_str()),
                 };
                 diesel::update(p::pages.filter(p::id.eq(*id)))
                     .set(change_set)
