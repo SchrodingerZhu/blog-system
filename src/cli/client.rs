@@ -65,7 +65,7 @@ pub enum SubCommand {
         #[structopt(short, long, help = "Path to the page content file")]
         content_file: Option<PathBuf>,
         #[structopt(short, long, help = "Short desciption of the page")]
-        description: String,
+        description: Option<String>,
         #[structopt(short = "m", long, help = "Whether the page is an important one")]
         important: Option<bool>,
     },
@@ -173,7 +173,7 @@ impl SubCommand {
                     title,
                     content,
                     important,
-                    description: Some(description)
+                    description
                 }
             }
             SubCommand::RemovePost { id } => {
