@@ -1,7 +1,6 @@
 #![feature(map_first_last)]
 #![feature(unboxed_closures)]
-#![feature(fn_traits)]
-#![feature(test)]
+#![feature(core_intrinsics)]
 #[macro_use]
 extern crate diesel;
 
@@ -33,7 +32,7 @@ type Conn = diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 #[global_allocator]
 static ALLOC: SnMalloc = SnMalloc;
 
-
+const PAGE_LIMIT : i64 = 5;
 pub struct ServerState {
     pool: ConnPool,
     blog_name: String,
@@ -78,6 +77,7 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/page").strip_prefix().get(serve_page);
     http_server.at("/tag").strip_prefix().get(serve_tag);
     http_server.at("/tags").get(serve_tags);
+    http_server.at("/lucky").get(serve_lucky);
     http_server.at("/search").post(handle_search);
     http_server.at("/raw/comment").strip_prefix().get(serve_comment_raw);
     http_server.at("/raw/post").strip_prefix().get(serve_post_raw);

@@ -5,7 +5,8 @@
 
 .title-text {
     padding-top: 5%;
-    font-size: 75px;
+    font-size: 6.18vw;
+    min-font-size: 40px;
 }
 
 .padding-box {
@@ -16,7 +17,8 @@
 
 .clock-box {
     padding-top: 2%;
-    font-size: 60px;
+    font-size: 5vw;
+    min-font-size: 30px;
 }
 
 .fill {

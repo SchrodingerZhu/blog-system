@@ -2,8 +2,11 @@ use http_types::{Status, StatusCode};
 
 use crate::Conn;
 use crate::schema::{comments, pages, posts};
-
-#[derive(diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug, serde::Serialize, serde::Deserialize)]
+use diesel::pg::Pg;
+use diesel::{RunQueryDsl, QueryDsl};
+use crate::PAGE_LIMIT;
+#[derive(diesel::QueryableByName, diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug, serde::Serialize, serde::Deserialize)]
+#[table_name="posts"]
 pub struct Post {
     pub id: i32,
     pub title: String,
@@ -188,9 +191,6 @@ pub const POST_COLUMNS: PostColumns = (
 impl Post {
     #[inline(always)]
     pub fn list(connection: &Conn, search: &str, page_number: Option<i64>) -> tide::Result<Vec<Self>> {
-        use diesel::RunQueryDsl;
-        use diesel::QueryDsl;
-        use diesel::pg::Pg;
         use crate::schema::posts::dsl::*;
         use crate::schema;
         use diesel_full_text_search::{plainto_tsquery, TsVectorExtensions};
@@ -205,8 +205,8 @@ impl Post {
             query
                 .select(POST_COLUMNS)
                 .order_by(id)
-                .limit(20)
-                .offset(page_number * 20)
+                .limit(PAGE_LIMIT)
+                .offset(page_number * PAGE_LIMIT)
                 .load::<Post>(connection)
                 .status(StatusCode::InternalServerError)
         } else {
@@ -233,3 +233,4 @@ impl Post {
 }
 
 diesel::joinable!(comments -> posts (post_id));
+
