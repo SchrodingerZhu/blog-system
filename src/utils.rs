@@ -129,3 +129,55 @@ pub fn confirm<S: AsRef<str>>(msg: S) -> anyhow::Result<()> {
         Err(anyhow!("operation cancelled"))
     }
 }
+
+use katex::{Opts, OutputType};
+
+pub trait RenderKaTeX {
+    fn render_katex(&self) -> tide::Result<String>;
+}
+
+impl<S: AsRef<str>> RenderKaTeX for S {
+    fn render_katex(&self) -> tide::Result<String> {
+        let content = self.as_ref();
+        let mut buffer = String::with_capacity(1024);
+        let mut sub_buffer = String::new();
+        let mut status = 0;
+        for i in content.chars() {
+            status = match (status, i) {
+                (0, '$') => 1,
+                (1, '$') => 2, // display
+                (1, _) => 5, // simple
+                (2, '$') => {
+                    let res = katex::render_with_opts(sub_buffer.as_str(), Opts::builder()
+                        .display_mode(false)
+                        .output_type(OutputType::Html)
+                        .build()
+                        .unwrap())?;
+                    buffer.push_str(&res);
+                    sub_buffer.clear();
+                    3
+                },
+                (3, '$') => 0,
+                (5, '$') => {
+                    let res = katex::render_with_opts(sub_buffer.as_str(), Opts::builder()
+                        .display_mode(false)
+                        .output_type(OutputType::Html)
+                        .build()
+                        .unwrap())?;
+                    buffer.push_str(&res);
+                    sub_buffer.clear();
+                    0
+                }
+                (_, _) => status,
+            };
+            if i != '$' {
+                if status != 2 && status != 5 {
+                    buffer.push(i);
+                } else {
+                    sub_buffer.push(i);
+                }
+            }
+        }
+        Ok(buffer)
+    }
+}

@@ -16,6 +16,8 @@ use crate::template::{PostsTemplate, Tag, TagTemplate};
 
 static EMAIL_REGEX: &str = "^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$";
 use crate::PAGE_LIMIT;
+use crate::utils::RenderKaTeX;
+
 pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Response> {
     use crate::schema::posts::dsl::*;
     let pool = &request.state().pool;
@@ -471,11 +473,8 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
             .link(Some(format!("{}/post/{}.html", request.state().domain,
                                x.title.to_ascii_lowercase().replace(" ", "-"))))
             .pub_date(Some(x.public_date.to_string()))
-            .content(Some({
-                let parser = pulldown_cmark::Parser::new(x.content.as_str());
-                let mut rendered = String::with_capacity(512);
-                pulldown_cmark::html::push_html(&mut rendered, parser);
-                rendered
+            .description(Some({
+                x.get_abstract(1024).render_katex().unwrap_or_else(|x| x.to_string())
             }))
             .build())
         .filter_map(|x| x.ok())
@@ -508,10 +507,7 @@ pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response
     let entries: Vec<atom_syndication::Entry> = all_posts.into_iter()
         .map(|x| atom_syndication::ContentBuilder::default()
             .value(Some({
-                let parser = pulldown_cmark::Parser::new(x.content.as_str());
-                let mut rendered = String::with_capacity(512);
-                pulldown_cmark::html::push_html(&mut rendered, parser);
-                rendered
+                x.get_abstract(1024).render_katex().unwrap_or_else(|x| x.to_string())
             }))
             .content_type(Some("text/html".to_string()))
             .src(Some(format!("{}/raw/post/{}", request.state().domain, x.id)))

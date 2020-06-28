@@ -28,7 +28,7 @@ impl Post {
         self.tags.join(", ")
     }
 
-    pub fn get_abstract(&self) -> String {
+    pub fn get_abstract(&self, limit: usize) -> String {
         use pulldown_cmark::*;
         let mut abstract_content = String::new();
         let parser = pulldown_cmark::Parser::new(self.content.as_str());
@@ -38,7 +38,7 @@ impl Post {
             match i {
                 Event::Text(text) => {
                     for i in text.chars() {
-                        if abstract_content.len() >= 256 && status == 0 {
+                        if abstract_content.len() >= limit && status == 0 {
                             break 'outer;
                         }
                         abstract_content.push(i);
@@ -47,7 +47,6 @@ impl Post {
                             (1, '$') => 2,
                             (1,  _ ) => 5,
                             (2, '$') => 3,
-                            (2,  _ ) => 0,
                             (3, '$') => 0,
                             (5, '$') => 0,
                             (_,  _ )   => status,

@@ -40,6 +40,7 @@ dotenv = "0.15"
 easy-hasher = "2.1"
 hashbrown = "0.7"
 rpassword = "4"
+katex = "0.2"
 rss =  { version = "1.9", features = ["builders", "serde"] }
 surf = "2.0.0-alpha.4"
 prettytable-rs = "0.8"
