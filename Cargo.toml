@@ -16,7 +16,7 @@ structopt = "0.2"
 ammonia = "3"
 r2d2_postgres = "0.16"
 pulldown-cmark = {version = "0.7", features = ["default", "simd"]}
-tide = { version = "0.10", features = ["unstable"] }
+tide = { version = "0.11", features = ["unstable"] }
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1"
 postgres = "0.17"

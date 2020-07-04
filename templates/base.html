@@ -10,7 +10,8 @@
           href="/static/img/icon.png">
 
     <!-- Add Material font (Roboto) and Material icon as needed -->
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i|Roboto+Mono:300,400,700|Roboto+Slab:300,400,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,500,500i,700,700i|Roboto+Mono:300,400,700|Roboto+Slab:300,400,700"
+          rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <!-- Add Material CSS, replace Bootstrap CSS -->
@@ -20,12 +21,11 @@
     <title>{% block title %}{% endblock %}</title>
     {% block head %}{% endblock %}
 </head>
-<body>
-
+<body onresize="adjustPaddingFont()">
 <div class="container-fluid px-0">
     {% block nav %}
-    <nav class="shadow-sm rounded navbar navbar-expand-lg navbar-light bg-white fixed-top">
-        <a class="navbar-brand" href="#">{% block title %}{% endblock %}</a>
+    <nav class="shadow-sm rounded navbar navbar-expand-lg navbar-light bg-white fixed-top" id="navBar">
+        <a class="navbar-brand" href="#" id="brand">{% block title %}{% endblock %}</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -47,7 +47,7 @@
         </div>
     </nav>
     {% endblock %}
-    <div class="container" style="padding-top: 72px">
+    <div class="container" id="mainContainer">
         {% block body %}{% endblock %}
         <footer class="pt-5 my-md-5 pt-md-5 border-top text-center">
             <div class="row footer-content">
@@ -98,5 +98,17 @@
         integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
         crossorigin="anonymous"></script>
 <script src="/static/js/material.min.js" async></script>
+<script>
+    let brand = document.getElementById("brand");
+    const originalFontSize = parseFloat(window.getComputedStyle(brand, null).getPropertyValue('font-size'));
+    function adjustPaddingFont() {
+        let container = document.getElementById("mainContainer");
+        let nav = document.getElementById("navBar");
+        container.style.paddingTop = (nav.offsetHeight * 1.2).toString() + 'px';
+        brand.hidden  = (originalFontSize * brand.textContent.length >= nav.offsetWidth)
+    }
+
+    adjustPaddingFont();
+</script>
 </body>
 </html>
