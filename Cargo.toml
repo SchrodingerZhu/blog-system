@@ -25,7 +25,7 @@ tempfile = "3.1"
 diesel = { version = "1.4", features = ["default", "postgres", "extras", "unstable"]}
 pretty_env_logger = "0.4"
 log = "0.4"
-askama = "0.9"
+askama = "0.10"
 snmalloc-rs = { version = "0.2", features = ["native-cpu", "cache-friendly"] }
 async-std = { version = "1.6", features = ["attributes", "unstable", "std"] }
 async-trait = "0.1"
