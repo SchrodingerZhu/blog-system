@@ -9,7 +9,6 @@ use std::path::Path;
 use anyhow::*;
 use diesel::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
-use snmalloc_rs::SnMalloc;
 use structopt::StructOpt;
 use xactor::{Actor, Addr};
 
@@ -29,8 +28,13 @@ mod cli;
 type ConnPool = Pool<ConnectionManager<PgConnection>>;
 type Conn = diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 
+#[cfg(feature = "use-snmalloc")]
 #[global_allocator]
-static ALLOC: SnMalloc = SnMalloc;
+static ALLOC: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
+
+#[cfg(feature = "use-mimalloc")]
+#[global_allocator]
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 const PAGE_LIMIT : i64 = 5;
 pub struct ServerState {

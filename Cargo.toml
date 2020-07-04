@@ -10,6 +10,9 @@ license-file = "LICENSE"
 repository = "https://github.com/SchrodingerZhu/blog-system"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+use-mimalloc = ["mimalloc"]
+use-snmalloc = ["snmalloc-rs"]
 [dependencies]
 serde = {version = "1.0", features = ["derive"]}
 structopt = "0.2"
@@ -26,7 +29,8 @@ diesel = { version = "1.4", features = ["default", "postgres", "extras", "unstab
 pretty_env_logger = "0.4"
 log = "0.4"
 askama = "0.10"
-snmalloc-rs = { version = "0.2", features = ["native-cpu", "cache-friendly"] }
+snmalloc-rs = { version = "0.2", features = ["native-cpu", "cache-friendly", "1mib"], optional = true}
+mimalloc = { version  = "0.1", optional = true }
 async-std = { version = "1.6", features = ["attributes", "unstable", "std"] }
 async-trait = "0.1"
 botan = "0.6"
@@ -53,5 +57,5 @@ async-diesel = "0.1.0"
 tide-compress = { git = "https://github.com/SchrodingerZhu/tide-compress" }
 [profile.release]
 opt-level = 3
-lto = "thin"
+lto = "fat"
 
