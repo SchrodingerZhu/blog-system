@@ -474,7 +474,7 @@ pub async fn handle_rss(request: Request<ServerState>) -> tide::Result<Response>
                                x.title.to_ascii_lowercase().replace(" ", "-"))))
             .pub_date(Some(x.public_date.to_string()))
             .description(Some({
-                x.get_abstract(1024).render_katex().unwrap_or_else(|x| x.to_string())
+                x.get_abstract(&1024).render_katex().unwrap_or_else(|x| x.to_string())
             }))
             .build())
         .filter_map(|x| x.ok())
@@ -507,7 +507,7 @@ pub async fn handle_atom(request: Request<ServerState>) -> tide::Result<Response
     let entries: Vec<atom_syndication::Entry> = all_posts.into_iter()
         .map(|x| atom_syndication::ContentBuilder::default()
             .value(Some({
-                x.get_abstract(1024).render_katex().unwrap_or_else(|x| x.to_string())
+                x.get_abstract(&1024).render_katex().unwrap_or_else(|x| x.to_string())
             }))
             .content_type(Some("text/html".to_string()))
             .src(Some(format!("{}/raw/post/{}", request.state().domain, x.id)))
