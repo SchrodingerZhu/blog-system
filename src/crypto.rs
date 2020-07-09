@@ -32,7 +32,7 @@ pub struct StampKeeper {
 
 #[async_trait::async_trait]
 impl xactor::Actor for StampKeeper {
-    async fn started(&mut self, ctx: &Context<Self>) -> xactor::Result<()> {
+    async fn started(&mut self, ctx: &mut Context<Self>) -> xactor::Result<()> {
         Ok(ctx.send_interval(CleanUp, Duration::from_secs(TIME_OUT / 2)))
     }
 }
