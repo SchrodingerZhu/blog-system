@@ -68,6 +68,10 @@ html, body {
     overflow-x: auto;
 }
 
-.md-content .MathJax {
+.md-content .katex {
+    overflow-x: auto;
+}
+
+.md-content .katex-display {
     overflow-x: auto;
 }

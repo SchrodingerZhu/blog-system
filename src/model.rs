@@ -5,6 +5,9 @@ use crate::schema::{comments, pages, posts};
 use diesel::pg::Pg;
 use diesel::{RunQueryDsl, QueryDsl};
 use crate::PAGE_LIMIT;
+use regex::Captures;
+use katex::Opts;
+
 #[derive(diesel::QueryableByName, diesel::Queryable, diesel::Associations, diesel::Identifiable, Debug, serde::Serialize, serde::Deserialize)]
 #[table_name="posts"]
 pub struct Post {
@@ -15,10 +18,29 @@ pub struct Post {
     pub tags: Vec<String>,
     pub content: String,
 }
+const BLOCK_MATH : &str = r#"\$\$((?:\n|.)*?)\$\$"#;
+const INLINE_MATH : &str = r#"\$(.*?)\$"#;
 
 impl Post {
     pub fn render_content(&self) -> String {
-        let cmark = pulldown_cmark::Parser::new(self.content.as_str());
+        log::warn!("called");
+        let block_re = regex::Regex::new(BLOCK_MATH).unwrap();
+        let inline_re = regex::Regex::new(INLINE_MATH).unwrap();
+        let content =
+            block_re.replace_all(self.content.as_str(), |caps: &Captures| {
+                katex::render_with_opts(&caps[1], Opts::builder()
+                    .display_mode(true)
+                    .build()
+                    .unwrap()).unwrap_or_else(|e| format!("[MATH ERROR: {}]", e))
+            });
+        let content =
+            inline_re.replace_all(content.as_ref(), |caps: &Captures| {
+                katex::render_with_opts(&caps[1], Opts::builder()
+                    .display_mode(false)
+                    .build()
+                    .unwrap()).unwrap_or_else(|e| format!("[MATH ERROR: {}]", e))
+            });
+        let cmark = pulldown_cmark::Parser::new(content.as_ref());
         let mut buffer = String::with_capacity(1024);
         pulldown_cmark::html::push_html(&mut buffer, cmark);
         buffer

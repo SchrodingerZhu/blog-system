@@ -5,21 +5,9 @@
 <link rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@10.0.3/build/styles/default.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css" integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
 <meta name="keywords" content="{{post.tags_to_keywords()}}">
 <meta name="description" content="Post {{post.title}} of Personal Blog: {{blog_name}}. Discuss about {{post.tags_to_keywords()}} here!">
-<script>
-    MathJax = {
-        tex: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']]
-        },
-        svg: {
-            fontCache: 'global'
-        },
-        "HTML-CSS": {
-            linebreaks: {automatic: true, width: "container"}
-        }
-    };
-</script>
 <script>
     window.klipse_settings = {
         selector_eval_js: '.language-klipse-eval-js',
@@ -126,6 +114,6 @@
     document.getElementById("nav-posts").classList.add("active");
     var simplemde = new SimpleMDE({element: document.getElementById("comment_content")});
 </script>
-<script type="text/javascript" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
 </script>
 {% endblock %}
+http://127.0.0.1:8888/?token=07871d774087638eb5f87c651d4747a8391d6cca5551ae00
