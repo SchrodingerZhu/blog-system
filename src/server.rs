@@ -30,7 +30,7 @@ pub async fn serve_posts(request: Request<ServerState>) -> tide::Result<tide::Re
     };
     let all_posts = posts
         .select(POST_COLUMNS)
-        .order_by(id)
+        .order_by(id.desc())
         .limit(PAGE_LIMIT)
         .offset(page_number * PAGE_LIMIT)
         .load_async::<Post>(&pool)

@@ -70,8 +70,10 @@ html, body {
 
 .md-content .katex {
     overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .md-content .katex-display {
     overflow-x: auto;
+    overflow-y: hidden;
 }
