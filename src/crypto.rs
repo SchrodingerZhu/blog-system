@@ -39,7 +39,7 @@ impl xactor::Actor for StampKeeper {
 
 #[async_trait::async_trait]
 impl xactor::Handler<CleanUp> for StampKeeper {
-    async fn handle(&mut self, _ctx: &Context<Self>, _msg: CleanUp) {
+    async fn handle(&mut self, _ctx: &mut Context<Self>, _msg: CleanUp) {
         while !self.stamps.is_empty()
             && UNIX_EPOCH.add(Duration::from_secs(self.stamps.first().unwrap().time_stamp))
             .elapsed().unwrap().as_secs() > TIME_OUT {
@@ -50,7 +50,7 @@ impl xactor::Handler<CleanUp> for StampKeeper {
 
 #[async_trait::async_trait]
 impl xactor::Handler<PutStamp> for StampKeeper {
-    async fn handle(&mut self, _ctx: &Context<Self>, msg: PutStamp) -> bool {
+    async fn handle(&mut self, _ctx: &mut Context<Self>, msg: PutStamp) -> bool {
         if self.stamps.contains(&msg.0) {
             false
         } else {

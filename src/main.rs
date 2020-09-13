@@ -10,6 +10,7 @@ use anyhow::*;
 use diesel::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use structopt::StructOpt;
+use std::sync::Arc;
 use xactor::{Actor, Addr};
 
 use crate::api::JsonResponse;
@@ -37,11 +38,13 @@ static ALLOC: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 const PAGE_LIMIT : i64 = 5;
+
+#[derive(Clone)]
 pub struct ServerState {
     pool: ConnPool,
     blog_name: String,
     stamp_keeper: Addr<StampKeeper>,
-    key_pair: KeyPair,
+    key_pair: Arc<KeyPair>,
     domain: String,
 }
 
@@ -72,7 +75,7 @@ async fn start_server<A: AsRef<str>,
         pool,
         blog_name,
         stamp_keeper,
-        key_pair: KeyPair { server_private, owner_public },
+        key_pair: Arc::new(KeyPair { server_private, owner_public }),
         domain,
     });
     http_server.at("/static").serve_dir(web_root.as_ref().join("static"))?;
@@ -94,8 +97,8 @@ async fn start_server<A: AsRef<str>,
     http_server.at("/sitemap.xml").get(handle_sitemap);
     http_server.at("/api").post(handle_api);
     http_server.at("/").get(index);
-    http_server.middleware(tide::After(error_handle));
-    http_server.middleware(tide_compress::CompressMiddleware::new());
+    http_server.with(tide::utils::After(error_handle));
+    http_server.with(tide_compress::CompressMiddleware::new());
     http_server.listen(format!("{}:{}", address.as_ref(), port).as_str())
         .await
         .map_err(Into::into)
@@ -186,7 +189,7 @@ async fn main() -> anyhow::Result<()> {
             let packet = Packet::from_json_request(request, &key_pair).await?;
             let response = surf::Client::new()
                 .post(format!("{}:{}/api", server_address, port))
-                .body_string(simd_json::to_string(&packet)?)
+                .body(simd_json::to_string(&packet)?)
                 .await
                 .map_err(|x| anyhow!("{}", x))?
                 .body_string()

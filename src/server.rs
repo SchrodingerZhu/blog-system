@@ -59,21 +59,17 @@ pub fn normal_page<A: Into<tide::Body>>(page: A) -> tide::Response {
     responce
 }
 
-pub async fn error_handle(result: tide::Result<Response>) -> tide::Result<tide::Response> {
-    let mut response = result.map(|x| (None, x)).unwrap_or_else(|e| {
-        let status = e.status();
-        (Some(e), Response::new(status))
-    });
-    if !response.1.status().is_success() {
+pub async fn error_handle(mut response: tide::Response) -> tide::Result<tide::Response> {
+    if !response.status().is_success() {
         let page = crate::template::ErrorTemplate {
-            code: response.1.status().to_string(),
-            message: response.0.map(|x| x.to_string()),
+            code: response.status().to_string(),
+            message: response.take_error().map(|x|x.to_string()),
         };
-        response.1.set_body(page.render()?);
-        response.1.set_content_type(http_types::mime::HTML);
+        response.set_body(page.render()?);
+        response.set_content_type(http_types::mime::HTML);
     }
     Ok(
-        response.1
+        response
     )
 }
 
